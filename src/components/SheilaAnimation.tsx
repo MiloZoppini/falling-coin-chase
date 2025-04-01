@@ -13,11 +13,11 @@ const SheilaAnimation: React.FC<SheilaAnimationProps> = ({
   onAnimationComplete 
 }) => {
   const [position, setPosition] = useState<{ x: number; y: number }>({ 
-    x: gameWidth, 
+    x: -80, 
     y: gameHeight / 2 - 50 
   });
   const [hammerPosition, setHammerPosition] = useState<{ x: number; y: number }>({ 
-    x: gameWidth + 150, 
+    x: -150, 
     y: gameHeight / 2 - 30 
   });
   const [opacity, setOpacity] = useState(1);
@@ -36,9 +36,9 @@ const SheilaAnimation: React.FC<SheilaAnimationProps> = ({
       
       // Calculate positions based on animation progress
       if (progress < 0.85) {
-        // Move from right to left
-        const newX = gameWidth - (gameWidth + 100) * progress;
-        const hammerX = gameWidth + 50 - (gameWidth + 100) * progress;
+        // Move from left to right
+        const newX = -80 + (gameWidth + 100) * progress;
+        const hammerX = -150 + (gameWidth + 100) * progress;
         
         setPosition({ x: newX, y: gameHeight / 2 - 50 });
         setHammerPosition({ x: hammerX, y: gameHeight / 2 - 30 });
