@@ -46,6 +46,9 @@ interface VodkaObject extends GameObject {
 
 interface PoopObject extends GameObject {
   type: 'poop';
+  createdAt: number;
+  onGround: boolean;
+  opacity: number;
 }
 
 type FallingObject = CoinObject | ObstacleObject | PowerUpObject | HeartObject | VodkaObject | PoopObject;
@@ -63,6 +66,8 @@ const COIN_TYPES = {
 };
 
 const POOP_POINT_VALUE = 150;
+const POOP_GROUND_DURATION = 5000; // 5 seconds in milliseconds
+const POOP_FADE_DURATION = 1000; // 1 second fade out
 
 const Game: React.FC = () => {
   const isMobile = useIsMobile();
@@ -545,20 +550,59 @@ const Game: React.FC = () => {
       width,
       height,
       speed,
-      type: 'poop'
+      type: 'poop',
+      createdAt: Date.now(),
+      onGround: false,
+      opacity: 1
     };
     
     setFallingObjects(prev => [...prev, newPoop]);
   };
 
   const updateFallingObjects = (deltaTime: number) => {
+    const now = Date.now();
+    
     setFallingObjects(prev => 
       prev
-        .map(obj => ({
-          ...obj,
-          y: obj.y + obj.speed * deltaTime
-        }))
-        .filter(obj => obj.y < (gameHeight + obj.height))
+        .map(obj => {
+          if (obj.type === 'poop') {
+            const poop = obj as PoopObject;
+            
+            if (poop.onGround) {
+              const timeOnGround = now - poop.createdAt;
+              
+              if (timeOnGround > POOP_GROUND_DURATION) {
+                const fadeProgress = Math.min(1, (timeOnGround - POOP_GROUND_DURATION) / POOP_FADE_DURATION);
+                return {
+                  ...poop,
+                  opacity: 1 - fadeProgress
+                };
+              }
+              return poop;
+            }
+            
+            if (obj.y >= (gameHeight - 120)) {
+              return {
+                ...obj,
+                y: gameHeight - 120,
+                onGround: true,
+                createdAt: now
+              };
+            }
+          }
+          
+          return {
+            ...obj,
+            y: obj.y + obj.speed * deltaTime
+          };
+        })
+        .filter(obj => {
+          if (obj.type === 'poop' && (obj as PoopObject).onGround) {
+            const timeOnGround = now - (obj as PoopObject).createdAt;
+            return timeOnGround < (POOP_GROUND_DURATION + POOP_FADE_DURATION);
+          }
+          return obj.y < (gameHeight + obj.height);
+        })
     );
   };
 
@@ -917,7 +961,7 @@ const Game: React.FC = () => {
             style={{ 
               left: `${playerPosition.x}px`,
               bottom: `100px`,
-              backgroundImage: isMuscleMartin
+              backgroundImage: isInvincible
                 ? `url('/images/MuscleMartin.png')`
                 : isVodkaActive 
                   ? `url('/images/martin_vodka.png')`
@@ -927,7 +971,7 @@ const Game: React.FC = () => {
               backgroundPosition: 'center',
               transform: playerDirection === 'left' ? 'scaleX(-1)' : 'scaleX(1)',
               transition: 'transform 0.2s ease-out',
-              width: isMuscleMartin ? '108px' : '72px',
+              width: isInvincible ? '108px' : '72px',
               height: '72px'
             }}
           ></div>
@@ -983,7 +1027,8 @@ const Game: React.FC = () => {
                           : `url('/images/nuke.png')`,
                 backgroundSize: 'contain',
                 backgroundRepeat: 'no-repeat',
-                backgroundPosition: 'center'
+                backgroundPosition: 'center',
+                opacity: obj.type === 'poop' ? (obj as PoopObject).opacity : 1
               }}
             ></div>
           ))}
