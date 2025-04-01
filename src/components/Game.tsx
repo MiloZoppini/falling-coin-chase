@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Coins, Star, Trophy, Medal } from 'lucide-react';
 import { useIsMobile } from "@/hooks/use-mobile";
 import PlayerNameModal from './PlayerNameModal';
+import SheilaAnimation from './SheilaAnimation';
 import { getHighScores, saveHighScore, HighScore } from '@/services/supabaseService';
 import {
   Table,
@@ -122,6 +123,7 @@ const Game: React.FC = () => {
 
   const [playerName, setPlayerName] = useState<string>('');
   const [showNameModal, setShowNameModal] = useState<boolean>(true);
+  const [showSheilaAnimation, setShowSheilaAnimation] = useState<boolean>(false);
   const [highScores, setHighScores] = useState<HighScore[]>([]);
   const [savedScore, setSavedScore] = useState<boolean>(false);
 
@@ -920,6 +922,8 @@ const Game: React.FC = () => {
     setSavedScore(false);
     setAreControlsReversed(false);
     lastPowerUpTime.current = 0;
+
+    setShowSheilaAnimation(true);
   };
 
   const getMedalColor = (position: number): string => {
@@ -951,6 +955,14 @@ const Game: React.FC = () => {
       
       {playerName && (
         <>
+          {showSheilaAnimation && (
+            <SheilaAnimation 
+              gameWidth={gameWidth} 
+              floorLevel={100}
+              onComplete={() => setShowSheilaAnimation(false)} 
+            />
+          )}
+
           <div 
             ref={playerRef} 
             className={`player ${isInvincible ? 'invincible' : ''} ${hasDoublePoints ? 'double-points' : ''} ${isWalking ? 'walking' : ''} ${isHurt ? 'hurt' : ''} ${isEjecting ? 'ejecting' : ''} ${areControlsReversed ? 'drunk' : ''}`}
