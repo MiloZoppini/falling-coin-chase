@@ -47,9 +47,9 @@ const GAME_LEVELS = {
 };
 
 const COIN_TYPES = {
-  bitcoin: { imagePath: '/images/bitcoin.png', pointValue: 100, width: 30, height: 30, probability: 0.4 },
-  moneycash: { imagePath: '/images/moneycash.png', pointValue: 200, width: 36, height: 24, probability: 0.35 },
-  saccosoldi: { imagePath: '/images/saccosoldi.png', pointValue: 500, width: 36, height: 36, probability: 0.25 }
+  bitcoin: { imagePath: '/images/bitcoin.png', pointValue: 500, width: 30, height: 30, probability: 0.4 },
+  moneycash: { imagePath: '/images/moneycash.png', pointValue: 100, width: 36, height: 24, probability: 0.35 },
+  saccosoldi: { imagePath: '/images/saccosoldi.png', pointValue: 200, width: 36, height: 36, probability: 0.25 }
 };
 
 const Game: React.FC = () => {
