@@ -204,8 +204,16 @@ const Game: React.FC = () => {
     
     if (lastPlayerPositionsRef.current.length >= 10) {
       const targetPosition = lastPlayerPositionsRef.current[0];
+      let dogX = targetPosition.x;
+      
+      if (targetPosition.direction === 'right') {
+        dogX = dogX - 30;
+      } else {
+        dogX = dogX + 30;
+      }
+      
       setDogPosition({
-        x: targetPosition.x,
+        x: dogX,
         direction: targetPosition.direction
       });
       
