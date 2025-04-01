@@ -51,9 +51,9 @@ interface PoopObject extends GameObject {
 type FallingObject = CoinObject | ObstacleObject | PowerUpObject | HeartObject | VodkaObject | PoopObject;
 
 const GAME_LEVELS = {
-  1: { speed: 0.2, spawnRate: 0.02, obstacleRate: 0.3, powerUpChance: 0.02, heartChance: 0.5, vodkaChance: 0.02, poopChance: 0.8 },
-  2: { speed: 0.3, spawnRate: 0.03, obstacleRate: 0.4, powerUpChance: 0.015, heartChance: 0.5, vodkaChance: 0.025, poopChance: 0.8 },
-  3: { speed: 0.4, spawnRate: 0.04, obstacleRate: 0.5, powerUpChance: 0.01, heartChance: 0.5, vodkaChance: 0.03, poopChance: 0.8 }
+  1: { speed: 0.2, spawnRate: 0.02, obstacleRate: 0.3, powerUpChance: 0.02, heartChance: 0.15, vodkaChance: 0.02, poopChance: 0.8 },
+  2: { speed: 0.3, spawnRate: 0.03, obstacleRate: 0.4, powerUpChance: 0.015, heartChance: 0.15, vodkaChance: 0.025, poopChance: 0.8 },
+  3: { speed: 0.4, spawnRate: 0.04, obstacleRate: 0.5, powerUpChance: 0.01, heartChance: 0.15, vodkaChance: 0.03, poopChance: 0.8 }
 };
 
 const COIN_TYPES = {
