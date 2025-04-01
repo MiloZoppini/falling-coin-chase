@@ -39,19 +39,23 @@ const Game: React.FC = () => {
   const { toast } = useToast();
   const gameContainerRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<HTMLDivElement>(null);
+  const dogRef = useRef<HTMLDivElement>(null);
   const gameLoopRef = useRef<number | null>(null);
   const touchStartXRef = useRef<number | null>(null);
   const lastFrameTimeRef = useRef<number>(0);
+  const lastPlayerPositionsRef = useRef<Array<{x: number, direction: 'left' | 'right'}>>([]);
   const [gameWidth, setGameWidth] = useState<number>(0);
   const [gameHeight, setGameHeight] = useState<number>(0);
   const [score, setScore] = useState<number>(0);
   const [lives, setLives] = useState<number>(3);
   const [isGameOver, setIsGameOver] = useState<boolean>(false);
   const [playerPosition, setPlayerPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [dogPosition, setDogPosition] = useState<{ x: number; direction: 'left' | 'right' }>({ x: 0, direction: 'right' });
   const [fallingObjects, setFallingObjects] = useState<FallingObject[]>([]);
   const [isPaused, setIsPaused] = useState<boolean>(false);
   const [playerDirection, setPlayerDirection] = useState<'left' | 'right'>('right');
   const [isWalking, setIsWalking] = useState<boolean>(false);
+  const [isDogWalking, setIsDogWalking] = useState<boolean>(false);
   
   const keysPressed = useRef<{left: boolean, right: boolean}>({
     left: false,
@@ -190,6 +194,24 @@ const Game: React.FC = () => {
       }
     };
   }, [isGameOver, isPaused, gameWidth, gameHeight, score, currentLevel, toast]);
+
+  useEffect(() => {
+    lastPlayerPositionsRef.current.push({ x: playerPosition.x, direction: playerDirection });
+    
+    if (lastPlayerPositionsRef.current.length > 15) {
+      lastPlayerPositionsRef.current.shift();
+    }
+    
+    if (lastPlayerPositionsRef.current.length >= 10) {
+      const targetPosition = lastPlayerPositionsRef.current[0];
+      setDogPosition({
+        x: targetPosition.x,
+        direction: targetPosition.direction
+      });
+      
+      setIsDogWalking(isWalking);
+    }
+  }, [playerPosition, playerDirection, isWalking]);
 
   const movePlayer = () => {
     setPlayerPosition(prev => {
@@ -523,6 +545,20 @@ const Game: React.FC = () => {
           backgroundPosition: 'center',
           transform: playerDirection === 'left' ? 'scaleX(-1)' : 'scaleX(1)',
           transition: 'transform 0.2s ease-out'
+        }}
+      ></div>
+      
+      <div 
+        ref={dogRef} 
+        className={`dog ${isDogWalking ? 'walking' : ''}`}
+        style={{ 
+          left: `${dogPosition.x}px`,
+          bottom: `100px`,
+          backgroundImage: `url('/images/Dog.png')`,
+          backgroundSize: 'contain',
+          backgroundRepeat: 'no-repeat',
+          backgroundPosition: 'center',
+          transform: dogPosition.direction === 'left' ? 'scaleX(-1)' : 'scaleX(1)',
         }}
       ></div>
       

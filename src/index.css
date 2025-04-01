@@ -67,6 +67,64 @@
     z-index: 10;
   }
   
+  /* Dog follower styles */
+  .dog {
+    position: absolute;
+    width: 50px;
+    height: 50px;
+    bottom: 100px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 9;
+    transition: left 0.3s ease-out;
+  }
+  
+  /* Dog walking animation */
+  .dog.walking {
+    animation: dog-walk 0.5s infinite;
+  }
+  
+  @keyframes dog-walk {
+    0% {
+      transform: translateY(0px) scaleX(1);
+    }
+    25% {
+      transform: translateY(-2px) scaleX(1);
+    }
+    50% {
+      transform: translateY(0px) scaleX(1);
+    }
+    75% {
+      transform: translateY(-2px) scaleX(1);
+    }
+    100% {
+      transform: translateY(0px) scaleX(1);
+    }
+  }
+  
+  /* Dog direction flipping */
+  .dog.walking[style*="scaleX(-1)"] {
+    animation: dog-walk-flipped 0.5s infinite;
+  }
+  
+  @keyframes dog-walk-flipped {
+    0% {
+      transform: translateY(0px) scaleX(-1);
+    }
+    25% {
+      transform: translateY(-2px) scaleX(-1);
+    }
+    50% {
+      transform: translateY(0px) scaleX(-1);
+    }
+    75% {
+      transform: translateY(-2px) scaleX(-1);
+    }
+    100% {
+      transform: translateY(0px) scaleX(-1);
+    }
+  }
+  
   /* Walking animation for player */
   .player.walking {
     animation: player-walk 0.5s infinite;
