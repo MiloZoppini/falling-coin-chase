@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
-import { Coin, Heart } from 'lucide-react';
+import { Coins, Heart } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
 
 // Game objects interfaces
@@ -297,7 +296,7 @@ const Game: React.FC = () => {
       {/* Game stats display */}
       <div className="game-stats">
         <div className="flex items-center mb-2">
-          <Coin className="mr-2" size={20} color="gold" />
+          <Coins className="mr-2" size={20} color="gold" />
           <span>{score}</span>
         </div>
         <div className="flex items-center">
