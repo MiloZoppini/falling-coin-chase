@@ -610,7 +610,7 @@ const Game: React.FC = () => {
               ? `url('/images/bitcoin.png')` 
               : obj.type === 'powerup' 
                 ? `url('/images/lemon.webp')` 
-                : 'none',
+                : `url('/images/nuke.png')`,
             backgroundSize: 'contain',
             backgroundPosition: 'center',
             backgroundRepeat: 'no-repeat',
