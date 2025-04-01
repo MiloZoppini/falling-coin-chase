@@ -1,10 +1,11 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Coins, Heart, Star, Trophy, Medal } from 'lucide-react';
-import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import PlayerNameModal from './PlayerNameModal';
 import { getHighScores, saveHighScore, HighScore } from '@/services/supabaseService';
+import { Progress } from "@/components/ui/progress";
 import {
   Table,
   TableBody,
@@ -53,7 +54,6 @@ const COIN_TYPES = {
 };
 
 const Game: React.FC = () => {
-  const { toast } = useToast();
   const isMobile = useIsMobile();
   const gameContainerRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<HTMLDivElement>(null);
@@ -85,6 +85,7 @@ const Game: React.FC = () => {
   
   const [currentLevel, setCurrentLevel] = useState<number>(1);
   const [isInvincible, setIsInvincible] = useState<boolean>(false);
+  const [invincibilityTimeLeft, setInvincibilityTimeLeft] = useState<number>(0);
   const [hasDoublePoints, setHasDoublePoints] = useState<boolean>(false);
   const invincibilityTimeoutRef = useRef<number | null>(null);
   const doublePointsTimeoutRef = useRef<number | null>(null);
@@ -231,10 +232,11 @@ const Game: React.FC = () => {
       const newLevel = Math.min(3, Math.floor(score / 1500) + 1);
       if (newLevel !== currentLevel) {
         setCurrentLevel(newLevel);
-        toast({
-          title: `Level ${newLevel}!`,
-          description: "Speed and difficulty increased!",
-        });
+      }
+
+      // Update invincibility time left
+      if (isInvincible) {
+        setInvincibilityTimeLeft(prev => Math.max(0, prev - deltaTime / 1000 * 20));
       }
 
       gameLoopRef.current = requestAnimationFrame(gameLoop);
@@ -247,7 +249,7 @@ const Game: React.FC = () => {
         cancelAnimationFrame(gameLoopRef.current);
       }
     };
-  }, [isGameOver, isPaused, gameWidth, gameHeight, score, currentLevel, toast, isEjecting, playerName]);
+  }, [isGameOver, isPaused, gameWidth, gameHeight, score, currentLevel, isEjecting, playerName, isInvincible]);
 
   useEffect(() => {
     lastPlayerPositionsRef.current.push({ x: playerPosition.x, direction: playerDirection });
@@ -441,14 +443,6 @@ const Game: React.FC = () => {
           if (obj.type === 'coin') {
             const pointsAwarded = hasDoublePoints ? obj.pointValue * 2 : obj.pointValue;
             scoreIncrement += pointsAwarded;
-            
-            if (obj.coinType === 'saccosoldi') {
-              toast({
-                title: "Money Bag!",
-                description: `+${pointsAwarded} points!`,
-                variant: "default"
-              });
-            }
           } else if (obj.type === 'obstacle') {
             if (!isInvincible) {
               lostLife = true;
@@ -496,18 +490,6 @@ const Game: React.FC = () => {
                 gameOverElement.classList.add('visible');
               }
             }, 0);
-            
-            toast({
-              title: "Game Over!",
-              description: `Final score: ${score}`,
-              variant: "destructive"
-            });
-          } else {
-            toast({
-              title: "Hit!",
-              description: `${newLives} lives remaining`,
-              variant: "destructive"
-            });
           }
           return newLives;
         });
@@ -525,10 +507,7 @@ const Game: React.FC = () => {
     if (powerType === 'invincibility') {
       setIsInvincible(true);
       setIsMuscleMartin(true);
-      toast({
-        title: "MUSCLE POWER!",
-        description: "Martin transforms into MuscleMartin! Invincible for 5 seconds!",
-      });
+      setInvincibilityTimeLeft(100); // 100% of the bar
       
       if (gameContainerRef.current) {
         gameContainerRef.current.classList.add('earthquake');
@@ -541,15 +520,11 @@ const Game: React.FC = () => {
       invincibilityTimeoutRef.current = window.setTimeout(() => {
         setIsInvincible(false);
         setIsMuscleMartin(false);
+        setInvincibilityTimeLeft(0);
         
         if (gameContainerRef.current) {
           gameContainerRef.current.classList.remove('earthquake');
         }
-        
-        toast({
-          title: "Invincibility ended!",
-          description: "Be careful now!",
-        });
       }, 5000);
     }
   };
@@ -635,6 +610,7 @@ const Game: React.FC = () => {
     setIsHurt(false);
     setIsEjecting(false);
     setSavedScore(false);
+    setInvincibilityTimeLeft(0);
     lastPowerUpTime.current = 0;
     
     const gameOverElement = document.querySelector('.game-over');
@@ -653,11 +629,6 @@ const Game: React.FC = () => {
     if (hurtTimeoutRef.current) {
       clearTimeout(hurtTimeoutRef.current);
     }
-    
-    toast({
-      title: "New Game Started!",
-      description: "Catch the coins and avoid the obstacles!",
-    });
   };
 
   const handleNameSubmit = (name: string) => {
@@ -675,11 +646,6 @@ const Game: React.FC = () => {
     setIsEjecting(false);
     setSavedScore(false);
     lastPowerUpTime.current = 0;
-    
-    toast({
-      title: "Game Started!",
-      description: `Good luck, ${name}! Catch the coins and avoid the obstacles!`,
-    });
   };
 
   const getMedalColor = (position: number): string => {
@@ -787,20 +753,17 @@ const Game: React.FC = () => {
                 <Heart key={i} size={20} color="red" fill="red" className="mr-1" />
               ))}
             </div>
-            <div className="flex items-center mt-2">
-              {isInvincible && (
-                <div className="flex items-center mr-2 text-yellow-400">
+            
+            {isInvincible && (
+              <div className="mt-2 w-full">
+                <div className="flex items-center text-yellow-400 mb-1">
                   <Star size={16} className="mr-1" />
                   <span>Invincible</span>
                 </div>
-              )}
-              {hasDoublePoints && (
-                <div className="flex items-center text-green-400">
-                  <Coins size={16} className="mr-1" />
-                  <span>2x Points</span>
-                </div>
-              )}
-            </div>
+                <Progress value={invincibilityTimeLeft} className="h-2 w-full bg-gray-700" />
+              </div>
+            )}
+            
             <div className="player-name mt-2">
               <span>{playerName}</span>
             </div>
