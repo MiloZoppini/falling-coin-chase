@@ -889,33 +889,6 @@ const Game: React.FC = () => {
     setIsHurt(false);
     setIsEjecting(false);
     setSavedScore(false);
-    setAreControlsReversed(false);
-    lastPowerUpTime.current = 0;
-    
-    const gameOverElement = document.querySelector('.game-over');
-    if (gameOverElement) {
-      gameOverElement.classList.remove('visible');
-    }
-    
-    if (invincibilityTimeoutRef.current) {
-      clearTimeout(invincibilityTimeoutRef.current);
-      invincibilityTimeoutRef.current = null;
-    }
-    
-    if (doublePointsTimeoutRef.current) {
-      clearTimeout(doublePointsTimeoutRef.current);
-      doublePointsTimeoutRef.current = null;
-    }
-    
-    if (hurtTimeoutRef.current) {
-      clearTimeout(hurtTimeoutRef.current);
-      hurtTimeoutRef.current = null;
-    }
-    
-    if (controlsReversedTimeoutRef.current) {
-      clearTimeout(controlsReversedTimeoutRef.current);
-      controlsReversedTimeoutRef.current = null;
-    }
   };
 
   const handleNameSubmit = (name: string) => {
@@ -931,4 +904,206 @@ const Game: React.FC = () => {
     setHasDoublePoints(false);
     setIsHurt(false);
     setIsEjecting(false);
-    setSavedScore(
+    setSavedScore(false);
+  };
+
+  return (
+    <div 
+      ref={gameContainerRef}
+      className={`relative w-full h-full overflow-hidden bg-cover bg-center`}
+      style={{ backgroundImage: `url('/images/Background.webp')`, touchAction: 'none' }}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
+      {showNameModal ? (
+        <PlayerNameModal onSubmit={handleNameSubmit} />
+      ) : (
+        <>
+          <div className="absolute top-0 left-0 w-full p-2 flex justify-between items-center z-10">
+            <div className="flex items-center gap-2 bg-black bg-opacity-70 text-white p-2 rounded-lg">
+              <Coins className="text-yellow-400" size={20} />
+              <span className="font-bold">{score}</span>
+            </div>
+            <div className="flex items-center gap-1 bg-black bg-opacity-70 text-white p-2 rounded-lg">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <span 
+                  key={i} 
+                  className={`text-2xl ${i < lives ? 'text-red-500' : 'text-gray-600'}`}
+                >
+                  ❤️
+                </span>
+              ))}
+            </div>
+          </div>
+
+          <div className="absolute bottom-0 left-0 w-full h-20 bg-[url('/images/MartinUIBackground.png')] bg-repeat-x bg-contain opacity-0" />
+
+          {isInvincible && (
+            <div className="absolute top-[20%] left-1/2 transform -translate-x-1/2 bg-black bg-opacity-70 text-white px-4 py-2 rounded-lg z-10">
+              INVINCIBILITY: {invincibilityTimeLeft.toFixed(1)}s
+            </div>
+          )}
+          
+          {areControlsReversed && (
+            <div className="absolute top-[15%] left-1/2 transform -translate-x-1/2 bg-black bg-opacity-70 text-white px-4 py-2 rounded-lg z-10">
+              CONTROLS REVERSED: {controlsReversedTimeLeft.toFixed(1)}s
+            </div>
+          )}
+
+          <div
+            ref={playerRef}
+            className={`absolute transition-transform duration-100 ${isHurt ? 'animate-shake' : ''}`}
+            style={{
+              left: `${playerPosition.x}px`,
+              bottom: '100px',
+              transform: `scaleX(${playerDirection === 'left' ? -1 : 1})`,
+              width: '60px',
+              height: '120px'
+            }}
+          >
+            <img
+              src={isMuscleMartin ? '/images/MuscleMartin.png' : areControlsReversed ? '/images/martin_vodka.png' : '/images/Martin.png'}
+              alt="Player"
+              className={`h-full w-auto object-contain ${isWalking ? 'animate-character-walk' : ''}`}
+            />
+          </div>
+
+          <div
+            ref={dogRef}
+            style={{
+              position: 'absolute',
+              left: `${dogPosition.x}px`,
+              bottom: '100px',
+              transform: `scaleX(${dogPosition.direction === 'left' ? -1 : 1})`,
+              width: '60px',
+              height: '40px',
+              zIndex: 5
+            }}
+          >
+            <img
+              src="/images/Dog.png"
+              alt="Dog"
+              className={`h-full w-auto object-contain ${isDogWalking ? 'animate-character-walk' : ''}`}
+            />
+          </div>
+
+          {fallingObjects.map(obj => {
+            let imageSrc = '';
+            let className = '';
+            
+            if (obj.type === 'coin') {
+              imageSrc = COIN_TYPES[obj.coinType].imagePath;
+              className = 'animate-coin-spin';
+            } else if (obj.type === 'obstacle') {
+              imageSrc = '/images/lemon.webp';
+              className = 'animate-drop-spin';
+            } else if (obj.type === 'powerup') {
+              imageSrc = '/images/nuke.png';
+              className = 'animate-pulse';
+            } else if (obj.type === 'heart') {
+              imageSrc = '/images/heart.png';
+              className = 'animate-pulse';
+            } else if (obj.type === 'vodka') {
+              imageSrc = '/images/vodka.webp';
+              className = 'animate-vodka-wobble';
+            } else if (obj.type === 'poop') {
+              imageSrc = '/images/shit.png';
+              className = (obj as PoopObject).onGround ? '' : 'animate-poop-fall';
+            }
+            
+            return (
+              <div
+                key={obj.id}
+                style={{
+                  position: 'absolute',
+                  left: `${obj.x}px`,
+                  top: `${obj.y}px`,
+                  width: `${obj.width}px`,
+                  height: `${obj.height}px`,
+                  zIndex: obj.type === 'poop' && (obj as PoopObject).onGround ? 4 : 10
+                }}
+              >
+                <img
+                  src={imageSrc}
+                  alt={obj.type}
+                  className={`w-full h-full object-contain ${className}`}
+                />
+              </div>
+            );
+          })}
+
+          {isMobile && (
+            <div className="fixed bottom-24 left-0 w-full flex justify-between px-4 z-20">
+              <Button
+                variant="outline"
+                className="h-16 w-16 rounded-full bg-white opacity-60 flex items-center justify-center"
+                onPointerDown={startMovingLeft}
+                onPointerUp={stopMovingLeft}
+                onPointerLeave={stopMovingLeft}
+              >
+                ←
+              </Button>
+              <Button
+                variant="outline"
+                className="h-16 w-16 rounded-full bg-white opacity-60 flex items-center justify-center"
+                onPointerDown={startMovingRight}
+                onPointerUp={stopMovingRight}
+                onPointerLeave={stopMovingRight}
+              >
+                →
+              </Button>
+            </div>
+          )}
+
+          <div className={`game-over absolute inset-0 bg-black bg-opacity-80 flex flex-col items-center justify-center transition-opacity opacity-0 duration-1000 ease-in-out ${isGameOver ? 'z-30' : '-z-10'}`}>
+            <h1 className="text-4xl text-white font-bold mb-6">Game Over</h1>
+            <div className="flex items-center gap-2 mb-6">
+              <Trophy className="text-yellow-400" size={24} />
+              <span className="text-2xl text-white font-bold">{score}</span>
+            </div>
+
+            <div className="bg-white p-4 rounded-lg mb-6 w-full max-w-md">
+              <h2 className="text-xl font-bold mb-2 text-center">Leaderboard</h2>
+              
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableCell className="font-bold">Rank</TableCell>
+                    <TableCell className="font-bold">Name</TableCell>
+                    <TableCell className="font-bold text-right">Score</TableCell>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {highScores.slice(0, 5).map((highScore, index) => (
+                    <TableRow key={index} className={highScore.name === playerName && highScore.score === score ? 'bg-yellow-100' : ''}>
+                      <TableCell>
+                        {index === 0 ? (
+                          <Medal className="text-yellow-500" size={18} />
+                        ) : index === 1 ? (
+                          <Medal className="text-gray-400" size={18} />
+                        ) : index === 2 ? (
+                          <Medal className="text-amber-600" size={18} />
+                        ) : (
+                          index + 1
+                        )}
+                      </TableCell>
+                      <TableCell>{highScore.name}</TableCell>
+                      <TableCell className="text-right">{highScore.score}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+            
+            <Button onClick={resetGame} className="bg-green-600 hover:bg-green-700">
+              Play Again
+            </Button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
+
+export default Game;
