@@ -25,6 +25,8 @@ interface GameObject {
 
 interface CoinObject extends GameObject {
   type: 'coin';
+  coinType: 'bitcoin' | 'moneycash' | 'saccosoldi';
+  pointValue: number;
 }
 
 interface ObstacleObject extends GameObject {
@@ -42,6 +44,12 @@ const GAME_LEVELS = {
   1: { speed: 0.2, spawnRate: 0.02, obstacleRate: 0.3, powerUpChance: 0.02 },
   2: { speed: 0.3, spawnRate: 0.03, obstacleRate: 0.4, powerUpChance: 0.015 },
   3: { speed: 0.4, spawnRate: 0.04, obstacleRate: 0.5, powerUpChance: 0.01 }
+};
+
+const COIN_TYPES = {
+  bitcoin: { imagePath: '/images/bitcoin.png', pointValue: 100, width: 30, height: 30, probability: 0.4 },
+  moneycash: { imagePath: '/images/moneycash.png', pointValue: 200, width: 36, height: 24, probability: 0.35 },
+  saccosoldi: { imagePath: '/images/saccosoldi.png', pointValue: 500, width: 36, height: 36, probability: 0.25 }
 };
 
 const Game: React.FC = () => {
@@ -300,21 +308,57 @@ const Game: React.FC = () => {
     const isCoin = Math.random() > levelSettings.obstacleRate;
     const speed = levelSettings.speed * (1 + Math.random() * 0.5);
 
-    const width = isCoin ? 30 : 48;
-    const height = isCoin ? 30 : 48;
-    const x = Math.random() * (gameWidth - width);
-
-    const newObject: FallingObject = {
-      id,
-      x,
-      y: -30,
-      width,
-      height,
-      speed,
-      type: isCoin ? 'coin' : 'obstacle'
-    };
-
-    setFallingObjects(prev => [...prev, newObject]);
+    if (isCoin) {
+      const rand = Math.random();
+      let coinType: keyof typeof COIN_TYPES;
+      let cumulativeProbability = 0;
+      
+      for (const type in COIN_TYPES) {
+        const typeKey = type as keyof typeof COIN_TYPES;
+        cumulativeProbability += COIN_TYPES[typeKey].probability;
+        if (rand < cumulativeProbability) {
+          coinType = typeKey;
+          break;
+        }
+      }
+      
+      coinType = coinType || 'bitcoin';
+      
+      const coinInfo = COIN_TYPES[coinType];
+      const width = coinInfo.width;
+      const height = coinInfo.height;
+      const x = Math.random() * (gameWidth - width);
+      
+      const newCoin: CoinObject = {
+        id,
+        x,
+        y: -30,
+        width,
+        height,
+        speed,
+        type: 'coin',
+        coinType,
+        pointValue: coinInfo.pointValue
+      };
+      
+      setFallingObjects(prev => [...prev, newCoin]);
+    } else {
+      const width = 48;
+      const height = 48;
+      const x = Math.random() * (gameWidth - width);
+      
+      const newObstacle: ObstacleObject = {
+        id,
+        x,
+        y: -30,
+        width,
+        height,
+        speed,
+        type: 'obstacle'
+      };
+      
+      setFallingObjects(prev => [...prev, newObstacle]);
+    }
   };
 
   const createPowerUp = () => {
@@ -395,7 +439,16 @@ const Game: React.FC = () => {
 
         if (collision) {
           if (obj.type === 'coin') {
-            scoreIncrement += hasDoublePoints ? 2 : 1;
+            const pointsAwarded = hasDoublePoints ? obj.pointValue * 2 : obj.pointValue;
+            scoreIncrement += pointsAwarded;
+            
+            if (obj.coinType === 'saccosoldi') {
+              toast({
+                title: "Money Bag!",
+                description: `+${pointsAwarded} points!`,
+                variant: "default"
+              });
+            }
           } else if (obj.type === 'obstacle') {
             if (!isInvincible) {
               lostLife = true;
@@ -410,7 +463,7 @@ const Game: React.FC = () => {
       }
 
       if (scoreIncrement > 0) {
-        setScore(s => s + scoreIncrement * 100);
+        setScore(s => s + scoreIncrement);
       }
       
       if (lostLife) {
@@ -698,7 +751,7 @@ const Game: React.FC = () => {
               key={obj.id}
               className={
                 obj.type === 'coin' 
-                  ? 'coin' 
+                  ? `coin coin-${(obj as CoinObject).coinType}` 
                   : obj.type === 'obstacle' 
                     ? 'obstacle' 
                     : `powerup powerup-${obj.powerType}`
@@ -710,7 +763,7 @@ const Game: React.FC = () => {
                 height: `${obj.height}px`,
                 borderRadius: obj.type === 'coin' ? '50%' : obj.type === 'powerup' ? '0' : '0px',
                 backgroundImage: obj.type === 'coin' 
-                  ? `url('/images/bitcoin.png')` 
+                  ? `url('${COIN_TYPES[(obj as CoinObject).coinType].imagePath}')` 
                   : obj.type === 'powerup' 
                     ? `url('/images/lemon.webp')` 
                     : `url('/images/nuke.png')`,
