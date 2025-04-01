@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button";
 import { Coins, Star, Trophy, Medal } from 'lucide-react';
 import { useIsMobile } from "@/hooks/use-mobile";
 import PlayerNameModal from './PlayerNameModal';
-import SheilaAnimation from './SheilaAnimation';
 import { getHighScores, saveHighScore, HighScore } from '@/services/supabaseService';
 import {
   Table,
@@ -69,8 +68,6 @@ const POOP_POINT_VALUE = 150;
 const POOP_WIDTH = 29;
 const POOP_HEIGHT = 29;
 const AUTO_POOP_INTERVAL = 10000;
-const SHEILA_APPEARANCE_CHANCE = 0.05; // Reduced chance - we'll show her at start anyway
-const MIN_SHEILA_INTERVAL = 30000; // Increased minimum interval to 30 seconds
 
 const Game: React.FC = () => {
   const isMobile = useIsMobile();
@@ -95,9 +92,6 @@ const Game: React.FC = () => {
   const [isDogWalking, setIsDogWalking] = useState<boolean>(false);
   const [isEjecting, setIsEjecting] = useState<boolean>(false);
   const [isVodkaActive, setIsVodkaActive] = useState<boolean>(false);
-  
-  const [showSheilaAnimation, setShowSheilaAnimation] = useState<boolean>(false);
-  const lastSheilaAnimationTime = useRef<number>(0);
   
   const keysPressed = useRef<{left: boolean, right: boolean}>({
     left: false,
@@ -279,45 +273,34 @@ const Game: React.FC = () => {
         createFallingObject();
       }
       
-      const now = Date.now();
-      const timeSinceLastSheila = now - lastSheilaAnimationTime.current;
-      
-      if (!showSheilaAnimation && 
-          timeSinceLastSheila > MIN_SHEILA_INTERVAL && 
-          Math.random() < SHEILA_APPEARANCE_CHANCE * deltaTime * 0.001) {
-        console.log("Triggering random Sheila animation");
-        setShowSheilaAnimation(true);
-        lastSheilaAnimationTime.current = now;
-      }
-
-      const timeSinceLastPowerUp = now - lastPowerUpTime.current;
+      const timeSinceLastPowerUp = Date.now() - lastPowerUpTime.current;
       if (timeSinceLastPowerUp > 15000 && Math.random() < levelSettings.powerUpChance * deltaTime * 0.01) {
         createPowerUp();
-        lastPowerUpTime.current = now;
+        lastPowerUpTime.current = Date.now();
       }
       
-      const timeSinceLastHeart = now - lastHeartSpawnTime.current;
+      const timeSinceLastHeart = Date.now() - lastHeartSpawnTime.current;
       if (lives < 5 && timeSinceLastHeart > 10000 && Math.random() < levelSettings.heartChance * deltaTime * 0.01) {
         createHeart();
-        lastHeartSpawnTime.current = now;
+        lastHeartSpawnTime.current = Date.now();
       }
       
-      const timeSinceLastVodka = now - lastVodkaSpawnTime.current;
+      const timeSinceLastVodka = Date.now() - lastVodkaSpawnTime.current;
       if (timeSinceLastVodka > 12000 && Math.random() < levelSettings.vodkaChance * deltaTime * 0.01) {
         createVodka();
-        lastVodkaSpawnTime.current = now;
+        lastVodkaSpawnTime.current = Date.now();
       }
       
-      const timeSinceLastPoop = now - lastPoopTime.current;
+      const timeSinceLastPoop = Date.now() - lastPoopTime.current;
       if (timeSinceLastPoop > 5000 && Math.random() < levelSettings.poopChance * deltaTime * 0.01 && isDogWalking) {
         createPoop();
-        lastPoopTime.current = now;
+        lastPoopTime.current = Date.now();
       }
       
-      const timeSinceLastAutoPoop = now - lastAutoPoopTime.current;
+      const timeSinceLastAutoPoop = Date.now() - lastAutoPoopTime.current;
       if (timeSinceLastAutoPoop > AUTO_POOP_INTERVAL) {
         createPoop();
-        lastAutoPoopTime.current = now;
+        lastAutoPoopTime.current = Date.now();
       }
 
       updateFallingObjects(deltaTime);
@@ -371,7 +354,7 @@ const Game: React.FC = () => {
         cancelAnimationFrame(gameLoopRef.current);
       }
     };
-  }, [isGameOver, isPaused, gameWidth, gameHeight, score, currentLevel, isEjecting, playerName, isInvincible, areControlsReversed, isDogWalking, lives, showSheilaAnimation, hasShownInitialAnimation]);
+  }, [isGameOver, isPaused, gameWidth, gameHeight, score, currentLevel, isEjecting, playerName, isInvincible, areControlsReversed, isDogWalking, lives]);
 
   useEffect(() => {
     lastPlayerPositionsRef.current.push({ x: playerPosition.x, direction: playerDirection });
@@ -907,9 +890,7 @@ const Game: React.FC = () => {
     setIsEjecting(false);
     setSavedScore(false);
     setAreControlsReversed(false);
-    setShowSheilaAnimation(false);
     lastPowerUpTime.current = 0;
-    lastSheilaAnimationTime.current = 0;
     
     const gameOverElement = document.querySelector('.game-over');
     if (gameOverElement) {
@@ -950,274 +931,4 @@ const Game: React.FC = () => {
     setHasDoublePoints(false);
     setIsHurt(false);
     setIsEjecting(false);
-    setSavedScore(false);
-    setAreControlsReversed(false);
-    
-    setShowSheilaAnimation(true);
-    setHasShownInitialAnimation(true);
-    lastSheilaAnimationTime.current = Date.now();
-  };
-
-  const getMedalColor = (position: number): string => {
-    switch (position) {
-      case 0: return "gold";
-      case 1: return "silver";
-      case 2: return "#CD7F32";
-      default: return "currentColor";
-    }
-  };
-
-  const handleSheilaAnimationComplete = () => {
-    console.log("Sheila animation complete, setting showSheilaAnimation to false");
-    setShowSheilaAnimation(false);
-  };
-
-  return (
-    <div 
-      ref={gameContainerRef} 
-      className="game-container font-pixel"
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
-      style={{
-        backgroundImage: `url('/images/Background.webp')`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat'
-      }}
-    >
-      {showNameModal && (
-        <PlayerNameModal onSubmit={handleNameSubmit} />
-      )}
-      
-      {playerName && (
-        <>
-          {showSheilaAnimation && gameWidth > 0 && gameHeight > 0 && (
-            <SheilaAnimation 
-              gameWidth={gameWidth} 
-              gameHeight={gameHeight} 
-              onAnimationComplete={handleSheilaAnimationComplete} 
-            />
-          )}
-          
-          <div 
-            ref={playerRef} 
-            className={`player ${isInvincible ? 'invincible' : ''} ${isTemporarilyImmune ? 'temp-immune' : ''} ${hasDoublePoints ? 'double-points' : ''} ${isWalking ? 'walking' : ''} ${isHurt ? 'hurt' : ''} ${isEjecting ? 'ejecting' : ''} ${areControlsReversed ? 'drunk' : ''}`}
-            style={{ 
-              left: `${playerPosition.x}px`,
-              bottom: `100px`,
-              backgroundImage: isInvincible
-                ? `url('/images/MuscleMartin.png')`
-                : isVodkaActive 
-                  ? `url('/images/martin_vodka.png')`
-                  : `url('/images/Martin.png')`,
-              backgroundSize: 'contain',
-              backgroundRepeat: 'no-repeat',
-              backgroundPosition: 'center',
-              transform: playerDirection === 'left' ? 'scaleX(-1)' : 'scaleX(1)',
-              transition: 'transform 0.2s ease-out',
-              width: isInvincible ? '108px' : '72px',
-              height: '72px',
-              opacity: isTemporarilyImmune ? (Math.floor(Date.now() / 100) % 2 ? 0.7 : 1) : 1
-            }}
-          ></div>
-          
-          <div 
-            ref={dogRef} 
-            className={`dog ${isDogWalking ? 'walking' : ''} ${isEjecting ? 'ejecting' : ''}`}
-            style={{ 
-              left: `${dogPosition.x}px`,
-              bottom: `100px`,
-              backgroundImage: `url('/images/Dog.png')`,
-              backgroundSize: 'contain',
-              backgroundRepeat: 'no-repeat',
-              backgroundPosition: 'center',
-              transform: dogPosition.direction === 'left' ? 'scaleX(-1)' : 'scaleX(1)',
-              width: '40px',
-              height: '40px'
-            }}
-          ></div>
-          
-          {fallingObjects.map((obj) => (
-            <div
-              key={obj.id}
-              className={
-                obj.type === 'coin' 
-                  ? `coin coin-${(obj as CoinObject).coinType}` 
-                  : obj.type === 'obstacle' 
-                    ? 'obstacle' 
-                    : obj.type === 'heart'
-                      ? 'heart pulsing-heart'
-                      : obj.type === 'vodka'
-                        ? 'vodka'
-                        : obj.type === 'poop'
-                          ? 'poop'
-                          : `powerup powerup-${(obj as PowerUpObject).powerType}`
-              }
-              style={{
-                left: `${obj.x}px`,
-                top: `${obj.y}px`,
-                width: `${obj.width}px`,
-                height: `${obj.height}px`,
-                backgroundColor: 'transparent',
-                backgroundImage: obj.type === 'coin' 
-                  ? `url('${COIN_TYPES[(obj as CoinObject).coinType].imagePath}')` 
-                  : obj.type === 'powerup' 
-                    ? `url('/images/lemon.webp')` 
-                    : obj.type === 'heart'
-                      ? `url('/images/heart.png')`
-                      : obj.type === 'vodka'
-                        ? `url('/images/vodka.webp')`
-                        : obj.type === 'poop'
-                          ? `url('/images/shit.png')`
-                          : `url('/images/nuke.png')`,
-                backgroundSize: 'contain',
-                backgroundRepeat: 'no-repeat',
-                backgroundPosition: 'center'
-              }}
-            ></div>
-          ))}
-          
-          <div className="game-stats">
-            <div className="flex items-center mb-2">
-              <Coins className="mr-2" size={20} color="gold" />
-              <span>{score}</span>
-            </div>
-            <div className="flex items-center mb-2">
-              <span className="mr-2">Level: {currentLevel}</span>
-            </div>
-            <div className="flex items-center">
-              {Array.from({ length: lives }).map((_, i) => (
-                <img 
-                  key={i} 
-                  src="/images/heart.png" 
-                  alt="Heart" 
-                  className="mr-1" 
-                  style={{ width: '20px', height: '20px' }} 
-                />
-              ))}
-            </div>
-            
-            {isInvincible && (
-              <div className="mt-2 w-full">
-                <div className="flex items-center text-yellow-400 mb-1">
-                  <Star size={16} className="mr-1" />
-                  <span>Invincible: {Math.ceil(invincibilityTimeLeft)}s</span>
-                </div>
-              </div>
-            )}
-            
-            {areControlsReversed && (
-              <div className="mt-2 w-full">
-                <div className="flex items-center text-red-400 mb-1">
-                  <span>Controls reversed: {Math.ceil(controlsReversedTimeLeft)}s</span>
-                </div>
-              </div>
-            )}
-            
-            <div className="player-name mt-2">
-              <span>{playerName}</span>
-            </div>
-          </div>
-          
-          {!isMobile && (
-            <div className="mobile-controls">
-              <button 
-                className="control-button left-button"
-                onTouchStart={startMovingLeft}
-                onTouchEnd={stopMovingLeft}
-                onMouseDown={startMovingLeft}
-                onMouseUp={stopMovingLeft}
-                onMouseLeave={stopMovingLeft}
-              >
-                &larr;
-              </button>
-              <button 
-                className="control-button right-button"
-                onTouchStart={startMovingRight}
-                onTouchEnd={stopMovingRight}
-                onMouseDown={startMovingRight}
-                onMouseUp={stopMovingRight}
-                onMouseLeave={stopMovingRight}
-              >
-                &rarr;
-              </button>
-            </div>
-          )}
-          
-          {isMobile && (
-            <div className="touch-controls">
-              <div 
-                className="touch-area left-area"
-                style={{
-                  position: 'absolute',
-                  left: 0,
-                  bottom: 0,
-                  width: '50%',
-                  height: '100%',
-                  zIndex: 5,
-                  opacity: 0
-                }}
-              />
-              <div 
-                className="touch-area right-area"
-                style={{
-                  position: 'absolute',
-                  right: 0,
-                  bottom: 0,
-                  width: '50%',
-                  height: '100%',
-                  zIndex: 5,
-                  opacity: 0
-                }}
-              />
-            </div>
-          )}
-        </>
-      )}
-      
-      <div className={`game-over ${isGameOver ? '' : 'hidden'}`}>
-        <h2 className="text-3xl font-bold mb-4">Game Over!</h2>
-        <p className="text-xl mb-2">Player: {playerName}</p>
-        <p className="text-xl mb-6">Final Score: {score}</p>
-        
-        {highScores.length > 0 && (
-          <div className="mb-6">
-            <div className="flex items-center gap-2 mb-3 justify-center">
-              <Trophy size={20} />
-              <h3 className="text-xl font-bold">Leaderboard</h3>
-            </div>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableCell className="w-12">Rank</TableCell>
-                  <TableCell>Player</TableCell>
-                  <TableCell className="text-right">Score</TableCell>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {highScores.slice(0, 3).map((entry, index) => (
-                  <TableRow key={index}>
-                    <TableCell>
-                      <div className="flex items-center">
-                        <Medal size={18} color={getMedalColor(index)} fill={getMedalColor(index)} />
-                      </div>
-                    </TableCell>
-                    <TableCell>{entry.playerName}</TableCell>
-                    <TableCell className="text-right">{entry.score}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        )}
-        
-        <Button onClick={resetGame} className="px-6 py-2 bg-blue-600 hover:bg-blue-700">
-          Play Again
-        </Button>
-      </div>
-    </div>
-  );
-};
-
-export default Game;
+    setSavedScore(
