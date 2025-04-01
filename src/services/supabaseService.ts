@@ -1,49 +1,5 @@
 
-import { createClient } from '@supabase/supabase-js';
-
-// Initialize Supabase client
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
-
-// Create a mock implementation when credentials are missing
-const isMissingCredentials = !supabaseUrl || !supabaseKey;
-
-// Create client (use mock if credentials are missing)
-const supabase = isMissingCredentials 
-  ? createMockSupabaseClient() 
-  : createClient(supabaseUrl, supabaseKey);
-
-// Mock implementation for local development
-function createMockSupabaseClient() {
-  console.warn('Supabase credentials not found. Using mock implementation.');
-  
-  // Mock data for high scores
-  const mockHighScores = [
-    { id: 1, playerName: 'Player1', score: 2500, created_at: new Date().toISOString() },
-    { id: 2, playerName: 'Player2', score: 2000, created_at: new Date().toISOString() },
-    { id: 3, playerName: 'Player3', score: 1800, created_at: new Date().toISOString() },
-    { id: 4, playerName: 'Player4', score: 1500, created_at: new Date().toISOString() },
-    { id: 5, playerName: 'Player5', score: 1200, created_at: new Date().toISOString() }
-  ];
-  
-  // Return a mock client with the same interface
-  return {
-    from: () => ({
-      select: () => ({
-        order: () => ({
-          limit: () => ({
-            data: mockHighScores,
-            error: null
-          })
-        })
-      }),
-      insert: () => ({
-        data: { id: Date.now() },
-        error: null
-      })
-    })
-  } as any;
-}
+import { supabase } from '@/integrations/supabase/client';
 
 export interface HighScore {
   id?: number;
