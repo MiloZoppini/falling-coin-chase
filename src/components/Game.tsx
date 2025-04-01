@@ -1,9 +1,577 @@
 
-import React from 'react';
-import GameController from './game/GameController';
+import React, { useState, useEffect, useRef } from 'react';
+import { Button } from "@/components/ui/button";
+import { Coins, Heart, Star } from 'lucide-react';
+import { useToast } from "@/components/ui/use-toast";
+
+// Game objects interfaces
+interface GameObject {
+  id: number;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  speed: number;
+}
+
+interface CoinObject extends GameObject {
+  type: 'coin';
+}
+
+interface ObstacleObject extends GameObject {
+  type: 'obstacle';
+}
+
+interface PowerUpObject extends GameObject {
+  type: 'powerup';
+  powerType: 'invincibility' | 'extraLife' | 'doublePoints';
+}
+
+type FallingObject = CoinObject | ObstacleObject | PowerUpObject;
+
+// Game levels
+const GAME_LEVELS = {
+  1: { speed: 0.2, spawnRate: 0.02, obstacleRate: 0.3, powerUpChance: 0.02 },
+  2: { speed: 0.3, spawnRate: 0.03, obstacleRate: 0.4, powerUpChance: 0.015 },
+  3: { speed: 0.4, spawnRate: 0.04, obstacleRate: 0.5, powerUpChance: 0.01 }
+};
 
 const Game: React.FC = () => {
-  return <GameController />;
+  const { toast } = useToast();
+  const gameContainerRef = useRef<HTMLDivElement>(null);
+  const playerRef = useRef<HTMLDivElement>(null);
+  const gameLoopRef = useRef<number | null>(null);
+  const touchStartXRef = useRef<number | null>(null);
+  const lastFrameTimeRef = useRef<number>(0);
+  const [gameWidth, setGameWidth] = useState<number>(0);
+  const [gameHeight, setGameHeight] = useState<number>(0);
+  const [score, setScore] = useState<number>(0);
+  const [lives, setLives] = useState<number>(3);
+  const [isGameOver, setIsGameOver] = useState<boolean>(false);
+  const [playerPosition, setPlayerPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [fallingObjects, setFallingObjects] = useState<FallingObject[]>([]);
+  const [isPaused, setIsPaused] = useState<boolean>(false);
+  
+  const keysPressed = useRef<{left: boolean, right: boolean}>({
+    left: false,
+    right: false
+  });
+  
+  const playerSpeed = 5;
+  
+  const [currentLevel, setCurrentLevel] = useState<number>(1);
+  const [isInvincible, setIsInvincible] = useState<boolean>(false);
+  const [hasDoublePoints, setHasDoublePoints] = useState<boolean>(false);
+  const invincibilityTimeoutRef = useRef<number | null>(null);
+  const doublePointsTimeoutRef = useRef<number | null>(null);
+  const lastPowerUpTime = useRef<number>(0);
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (gameContainerRef.current) {
+        const { width, height } = gameContainerRef.current.getBoundingClientRect();
+        setGameWidth(width);
+        setGameHeight(height);
+        
+        if (playerRef.current) {
+          const playerWidth = playerRef.current.offsetWidth;
+          setPlayerPosition({
+            x: width / 2 - playerWidth / 2,
+            y: height - 100
+          });
+        }
+      }
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+
+    toast({
+      title: "Game Started!",
+      description: "Catch the coins and avoid the obstacles!",
+    });
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      if (gameLoopRef.current) {
+        cancelAnimationFrame(gameLoopRef.current);
+      }
+      if (invincibilityTimeoutRef.current) {
+        clearTimeout(invincibilityTimeoutRef.current);
+      }
+      if (doublePointsTimeoutRef.current) {
+        clearTimeout(doublePointsTimeoutRef.current);
+      }
+    };
+  }, [toast]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (isGameOver) return;
+      
+      if (e.key === 'ArrowLeft' || e.key === 'a') {
+        keysPressed.current.left = true;
+      }
+      if (e.key === 'ArrowRight' || e.key === 'd') {
+        keysPressed.current.right = true;
+      }
+    };
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowLeft' || e.key === 'a') {
+        keysPressed.current.left = false;
+      }
+      if (e.key === 'ArrowRight' || e.key === 'd') {
+        keysPressed.current.right = false;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, [isGameOver]);
+
+  useEffect(() => {
+    if (isGameOver || isPaused) return;
+
+    const gameLoop = (timestamp: number) => {
+      const deltaTime = timestamp - lastFrameTimeRef.current;
+      lastFrameTimeRef.current = timestamp;
+      
+      if (deltaTime === 0) {
+        gameLoopRef.current = requestAnimationFrame(gameLoop);
+        return;
+      }
+
+      movePlayer();
+
+      const levelSettings = GAME_LEVELS[currentLevel as keyof typeof GAME_LEVELS];
+      
+      // Spawn objects based on level settings and time passed
+      if (Math.random() < levelSettings.spawnRate * deltaTime * 0.1) {
+        createFallingObject();
+      }
+
+      // Power-ups should be rare (and with a minimum time between them)
+      const now = Date.now();
+      const timeSinceLastPowerUp = now - lastPowerUpTime.current;
+      if (timeSinceLastPowerUp > 15000 && Math.random() < levelSettings.powerUpChance * deltaTime * 0.01) {
+        createPowerUp();
+        lastPowerUpTime.current = now;
+      }
+
+      updateFallingObjects(deltaTime);
+      checkCollisions();
+
+      // Progress level based on score
+      const newLevel = Math.min(3, Math.floor(score / 1500) + 1);
+      if (newLevel !== currentLevel) {
+        setCurrentLevel(newLevel);
+        toast({
+          title: `Level ${newLevel}!`,
+          description: "Speed and difficulty increased!",
+        });
+      }
+
+      gameLoopRef.current = requestAnimationFrame(gameLoop);
+    };
+
+    gameLoopRef.current = requestAnimationFrame(gameLoop);
+
+    return () => {
+      if (gameLoopRef.current) {
+        cancelAnimationFrame(gameLoopRef.current);
+      }
+    };
+  }, [isGameOver, isPaused, gameWidth, gameHeight, score, currentLevel, toast]);
+
+  const movePlayer = () => {
+    setPlayerPosition(prev => {
+      const playerWidth = playerRef.current?.offsetWidth || 40;
+      let newX = prev.x;
+
+      if (keysPressed.current.left && newX > 0) {
+        newX = Math.max(0, newX - playerSpeed);
+      }
+      if (keysPressed.current.right && newX < gameWidth - playerWidth) {
+        newX = Math.min(gameWidth - playerWidth, newX + playerSpeed);
+      }
+
+      return { ...prev, x: newX };
+    });
+  };
+
+  const createFallingObject = () => {
+    if (!gameWidth) return;
+
+    const id = Date.now() + Math.random();
+    const width = 30;
+    const x = Math.random() * (gameWidth - width);
+    const levelSettings = GAME_LEVELS[currentLevel as keyof typeof GAME_LEVELS];
+    
+    const isCoin = Math.random() > levelSettings.obstacleRate;
+    const speed = levelSettings.speed * (1 + Math.random() * 0.5);
+
+    const newObject: FallingObject = {
+      id,
+      x,
+      y: -30,
+      width,
+      height: 30,
+      speed,
+      type: isCoin ? 'coin' : 'obstacle'
+    };
+
+    setFallingObjects(prev => [...prev, newObject]);
+  };
+
+  const createPowerUp = () => {
+    if (!gameWidth) return;
+    
+    const id = Date.now() + Math.random();
+    const width = 30;
+    const x = Math.random() * (gameWidth - width);
+    const levelSettings = GAME_LEVELS[currentLevel as keyof typeof GAME_LEVELS];
+    const speed = levelSettings.speed * 0.8;
+
+    // Weight the power-ups so extraLife is rarer
+    const powerTypes: Array<PowerUpObject['powerType']> = [];
+    
+    // 10% chance for extra life
+    if (Math.random() < 0.1) {
+      powerTypes.push('extraLife');
+    } else {
+      // 50% chance for each of the other power-ups
+      powerTypes.push(Math.random() < 0.5 ? 'invincibility' : 'doublePoints');
+    }
+    
+    const powerType = powerTypes[0];
+
+    const newPowerUp: PowerUpObject = {
+      id,
+      x,
+      y: -30,
+      width,
+      height: 30,
+      speed,
+      type: 'powerup',
+      powerType
+    };
+    
+    setFallingObjects(prev => [...prev, newPowerUp]);
+  };
+
+  const updateFallingObjects = (deltaTime: number) => {
+    setFallingObjects(prev => 
+      prev
+        .map(obj => ({
+          ...obj,
+          y: obj.y + obj.speed * deltaTime
+        }))
+        .filter(obj => obj.y < (gameHeight + obj.height))
+    );
+  };
+
+  const checkCollisions = () => {
+    if (!playerRef.current) return;
+
+    const playerRect = playerRef.current.getBoundingClientRect();
+    const playerX = playerRect.left;
+    const playerY = playerRect.top;
+    const playerWidth = playerRect.width;
+    const playerHeight = playerRect.height;
+
+    setFallingObjects(prev => {
+      const remaining = [];
+      let scoreIncrement = 0;
+      let lostLife = false;
+      let powerupCollected = false;
+      let powerupType: PowerUpObject['powerType'] | null = null;
+
+      for (const obj of prev) {
+        const objectRect = {
+          left: obj.x,
+          top: obj.y,
+          right: obj.x + obj.width,
+          bottom: obj.y + obj.height
+        };
+
+        if (
+          playerX < objectRect.right &&
+          playerX + playerWidth > objectRect.left &&
+          playerY < objectRect.bottom &&
+          playerY + playerHeight > objectRect.top
+        ) {
+          if (obj.type === 'coin') {
+            scoreIncrement += hasDoublePoints ? 2 : 1;
+          } else if (obj.type === 'obstacle') {
+            if (!isInvincible) {
+              lostLife = true;
+            }
+          } else if (obj.type === 'powerup') {
+            powerupCollected = true;
+            powerupType = obj.powerType;
+          }
+        } else {
+          remaining.push(obj);
+        }
+      }
+
+      if (scoreIncrement > 0) {
+        setScore(s => s + scoreIncrement * 100);
+      }
+      
+      if (lostLife) {
+        setLives(l => {
+          const newLives = l - 1;
+          if (newLives <= 0) {
+            setIsGameOver(true);
+            toast({
+              title: "Game Over!",
+              description: `Final score: ${score}`,
+              variant: "destructive"
+            });
+          } else {
+            toast({
+              title: "Hit!",
+              description: `${newLives} lives remaining`,
+              variant: "destructive"
+            });
+          }
+          return newLives;
+        });
+      }
+      
+      if (powerupCollected && powerupType) {
+        handlePowerUp(powerupType);
+      }
+
+      return remaining;
+    });
+  };
+
+  const handlePowerUp = (powerType: PowerUpObject['powerType']) => {
+    switch (powerType) {
+      case 'invincibility':
+        setIsInvincible(true);
+        toast({
+          title: "Invincibility!",
+          description: "You are invincible for 5 seconds!",
+        });
+        
+        if (invincibilityTimeoutRef.current) {
+          clearTimeout(invincibilityTimeoutRef.current);
+        }
+        
+        invincibilityTimeoutRef.current = window.setTimeout(() => {
+          setIsInvincible(false);
+          toast({
+            title: "Invincibility ended!",
+            description: "Be careful now!",
+          });
+        }, 5000);
+        break;
+        
+      case 'extraLife':
+        setLives(l => {
+          // Cap maximum lives at 5
+          const newLives = Math.min(5, l + 1);
+          toast({
+            title: "Extra Life!",
+            description: `You now have ${newLives} lives!`,
+          });
+          return newLives;
+        });
+        break;
+        
+      case 'doublePoints':
+        setHasDoublePoints(true);
+        toast({
+          title: "Double Points!",
+          description: "Points are doubled for 8 seconds!",
+        });
+        
+        if (doublePointsTimeoutRef.current) {
+          clearTimeout(doublePointsTimeoutRef.current);
+        }
+        
+        // Reduce double points duration to 8 seconds
+        doublePointsTimeoutRef.current = window.setTimeout(() => {
+          setHasDoublePoints(false);
+          toast({
+            title: "Double Points ended!",
+            description: "Back to normal points.",
+          });
+        }, 8000);
+        break;
+    }
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (isGameOver) return;
+    touchStartXRef.current = e.touches[0].clientX;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (isGameOver || touchStartXRef.current === null || !playerRef.current) return;
+    
+    const touchX = e.touches[0].clientX;
+    const diffX = touchX - touchStartXRef.current;
+    touchStartXRef.current = touchX;
+    
+    setPlayerPosition(prev => {
+      const playerWidth = playerRef.current?.offsetWidth || 40;
+      const newX = Math.max(0, Math.min(gameWidth - playerWidth, prev.x + diffX));
+      return { ...prev, x: newX };
+    });
+  };
+
+  const handleTouchEnd = () => {
+    touchStartXRef.current = null;
+  };
+
+  const startMovingLeft = () => {
+    if (!isGameOver) keysPressed.current.left = true;
+  };
+
+  const stopMovingLeft = () => {
+    keysPressed.current.left = false;
+  };
+
+  const startMovingRight = () => {
+    if (!isGameOver) keysPressed.current.right = true;
+  };
+
+  const stopMovingRight = () => {
+    keysPressed.current.right = false;
+  };
+
+  const resetGame = () => {
+    setScore(0);
+    setLives(3);
+    setFallingObjects([]);
+    setCurrentLevel(1);
+    setIsGameOver(false);
+    setIsInvincible(false);
+    setHasDoublePoints(false);
+    lastPowerUpTime.current = 0;
+    
+    if (invincibilityTimeoutRef.current) {
+      clearTimeout(invincibilityTimeoutRef.current);
+    }
+    
+    if (doublePointsTimeoutRef.current) {
+      clearTimeout(doublePointsTimeoutRef.current);
+    }
+    
+    toast({
+      title: "New Game Started!",
+      description: "Catch the coins and avoid the obstacles!",
+    });
+  };
+
+  return (
+    <div 
+      ref={gameContainerRef} 
+      className="game-container"
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
+      <div 
+        ref={playerRef} 
+        className={`player ${isInvincible ? 'invincible' : ''} ${hasDoublePoints ? 'double-points' : ''}`}
+        style={{ 
+          left: `${playerPosition.x}px`,
+          bottom: `100px`
+        }}
+      ></div>
+      
+      {fallingObjects.map((obj) => (
+        <div
+          key={obj.id}
+          className={
+            obj.type === 'coin' 
+              ? 'coin' 
+              : obj.type === 'obstacle' 
+                ? 'obstacle' 
+                : `powerup powerup-${obj.powerType}`
+          }
+          style={{
+            left: `${obj.x}px`,
+            top: `${obj.y}px`,
+            width: `${obj.width}px`,
+            height: `${obj.height}px`,
+            borderRadius: obj.type === 'coin' || obj.type === 'powerup' ? '50%' : '0px'
+          }}
+        ></div>
+      ))}
+      
+      <div className="game-stats">
+        <div className="flex items-center mb-2">
+          <Coins className="mr-2" size={20} color="gold" />
+          <span>{score}</span>
+        </div>
+        <div className="flex items-center mb-2">
+          <span className="mr-2">Level: {currentLevel}</span>
+        </div>
+        <div className="flex items-center">
+          {Array.from({ length: lives }).map((_, i) => (
+            <Heart key={i} size={20} color="red" fill="red" className="mr-1" />
+          ))}
+        </div>
+        <div className="flex items-center mt-2">
+          {isInvincible && (
+            <div className="flex items-center mr-2 text-yellow-400">
+              <Star size={16} className="mr-1" />
+              <span>Invincible</span>
+            </div>
+          )}
+          {hasDoublePoints && (
+            <div className="flex items-center text-green-400">
+              <Coins size={16} className="mr-1" />
+              <span>2x Points</span>
+            </div>
+          )}
+        </div>
+      </div>
+      
+      <div className="mobile-controls">
+        <button 
+          className="control-button left-button"
+          onTouchStart={startMovingLeft}
+          onTouchEnd={stopMovingLeft}
+          onMouseDown={startMovingLeft}
+          onMouseUp={stopMovingLeft}
+          onMouseLeave={stopMovingLeft}
+        >
+          &larr;
+        </button>
+        <button 
+          className="control-button right-button"
+          onTouchStart={startMovingRight}
+          onTouchEnd={stopMovingRight}
+          onMouseDown={startMovingRight}
+          onMouseUp={stopMovingRight}
+          onMouseLeave={stopMovingRight}
+        >
+          &rarr;
+        </button>
+      </div>
+      
+      <div className={`game-over ${isGameOver ? '' : 'hidden'}`}>
+        <h2 className="text-3xl font-bold mb-4">Game Over!</h2>
+        <p className="text-xl mb-6">Final Score: {score}</p>
+        <Button onClick={resetGame} className="px-6 py-2 bg-blue-600 hover:bg-blue-700">
+          Play Again
+        </Button>
+      </div>
+    </div>
+  );
 };
 
 export default Game;
