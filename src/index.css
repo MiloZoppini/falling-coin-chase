@@ -1,4 +1,3 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -175,27 +174,24 @@
   
   /* Powerup effects on player */
   .player.invincible {
-    box-shadow: 0 0 20px 8px hsl(var(--muscle-glow));
     animation: muscle-pulse 0.8s infinite alternate;
   }
   
   /* Ensure invincible effect works with walking animation */
   .player.invincible.walking {
-    animation: muscle-pulse 0.8s infinite alternate, player-walk 0.5s infinite;
+    animation: player-walk 0.5s infinite;
   }
   
   .player.invincible.walking[style*="scaleX(-1)"] {
-    animation: muscle-pulse 0.8s infinite alternate, player-walk-flipped 0.5s infinite;
+    animation: player-walk-flipped 0.5s infinite;
   }
   
   /* New pulse animation for MuscleMartin */
   @keyframes muscle-pulse {
     0% { 
-      box-shadow: 0 0 15px 5px hsl(var(--muscle-glow));
       transform: scale(1);
     }
     100% { 
-      box-shadow: 0 0 25px 8px hsl(var(--muscle-glow));
       transform: scale(1.05);
     }
   }

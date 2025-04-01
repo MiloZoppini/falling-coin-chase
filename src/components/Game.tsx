@@ -559,8 +559,8 @@ const Game: React.FC = () => {
           backgroundPosition: 'center',
           transform: playerDirection === 'left' ? 'scaleX(-1)' : 'scaleX(1)',
           transition: 'transform 0.2s ease-out',
-          width: isMuscleMartin ? '80px' : '72px',
-          height: isMuscleMartin ? '80px' : '72px'
+          width: '72px',
+          height: '72px'
         }}
       ></div>
       
