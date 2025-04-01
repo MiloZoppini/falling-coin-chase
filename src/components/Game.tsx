@@ -155,6 +155,7 @@ const Game: React.FC = () => {
   const [highScores, setHighScores] = useState<HighScore[]>([]);
   const [savedScore, setSavedScore] = useState<boolean>(false);
   const gameStartTimeRef = useRef<number>(0);
+  const sheilaEntranceTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
     const loadHighScores = async () => {
@@ -286,7 +287,7 @@ const Game: React.FC = () => {
     if (gameStartTimeRef.current === 0) {
       gameStartTimeRef.current = Date.now();
       
-      const sheilaEntranceTimeoutRef = window.setTimeout(() => {
+      sheilaEntranceTimeoutRef.current = window.setTimeout(() => {
         setSheila(prev => ({
           ...prev,
           x: -100,
