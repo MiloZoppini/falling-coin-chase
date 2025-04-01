@@ -58,6 +58,17 @@
     height: 100%;
     overflow: hidden;
     background-color: hsl(var(--game-bg));
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+  }
+
+  .game-container * {
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
   }
 
   .game-container.earthquake {
