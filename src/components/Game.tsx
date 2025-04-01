@@ -606,7 +606,11 @@ const Game: React.FC = () => {
             width: `${obj.width}px`,
             height: `${obj.height}px`,
             borderRadius: obj.type === 'coin' ? '50%' : obj.type === 'powerup' ? '0' : '0px',
-            backgroundImage: obj.type === 'powerup' ? `url('/images/lemon.webp')` : 'none',
+            backgroundImage: obj.type === 'coin' 
+              ? `url('/images/bitcoin.png')` 
+              : obj.type === 'powerup' 
+                ? `url('/images/lemon.webp')` 
+                : 'none',
             backgroundSize: 'contain',
             backgroundPosition: 'center',
             backgroundRepeat: 'no-repeat',
