@@ -243,10 +243,17 @@ const Game: React.FC = () => {
         setCurrentLevel(newLevel);
       }
 
-      // Update invincibility time left
       if (isInvincible) {
         setInvincibilityTimeLeft(prev => {
           const newValue = Math.max(0, prev - deltaTime / 1000);
+          if (newValue <= 0 && invincibilityTimeoutRef.current) {
+            clearTimeout(invincibilityTimeoutRef.current);
+            setIsInvincible(false);
+            setIsMuscleMartin(false);
+            if (gameContainerRef.current) {
+              gameContainerRef.current.classList.remove('earthquake');
+            }
+          }
           return newValue;
         });
       }
@@ -547,9 +554,11 @@ const Game: React.FC = () => {
 
   const handlePowerUp = (powerType: PowerUpObject['powerType']) => {
     if (powerType === 'invincibility') {
+      const invincibilityDuration = 5; // 5 seconds
+      
       setIsInvincible(true);
       setIsMuscleMartin(true);
-      setInvincibilityTimeLeft(5); // Start with 5 seconds countdown
+      setInvincibilityTimeLeft(invincibilityDuration);
       
       if (gameContainerRef.current) {
         gameContainerRef.current.classList.add('earthquake');
@@ -567,7 +576,7 @@ const Game: React.FC = () => {
         if (gameContainerRef.current) {
           gameContainerRef.current.classList.remove('earthquake');
         }
-      }, 5000);
+      }, invincibilityDuration * 1000);
     }
   };
 
