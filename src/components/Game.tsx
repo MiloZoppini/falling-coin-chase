@@ -254,19 +254,21 @@ const Game: React.FC = () => {
     if (!gameWidth) return;
 
     const id = Date.now() + Math.random();
-    const width = 30;
-    const x = Math.random() * (gameWidth - width);
     const levelSettings = GAME_LEVELS[currentLevel as keyof typeof GAME_LEVELS];
     
     const isCoin = Math.random() > levelSettings.obstacleRate;
     const speed = levelSettings.speed * (1 + Math.random() * 0.5);
+
+    const width = isCoin ? 30 : 48;
+    const height = isCoin ? 30 : 48;
+    const x = Math.random() * (gameWidth - width);
 
     const newObject: FallingObject = {
       id,
       x,
       y: -30,
       width,
-      height: 30,
+      height,
       speed,
       type: isCoin ? 'coin' : 'obstacle'
     };
