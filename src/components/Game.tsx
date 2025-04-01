@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
-import { Coins, Heart, Star, Trophy, Medal } from 'lucide-react';
+import { Coins, Star, Trophy, Medal } from 'lucide-react';
 import { useIsMobile } from "@/hooks/use-mobile";
 import PlayerNameModal from './PlayerNameModal';
 import { getHighScores, saveHighScore, HighScore } from '@/services/supabaseService';
@@ -235,7 +235,10 @@ const Game: React.FC = () => {
 
       // Update invincibility time left
       if (isInvincible) {
-        setInvincibilityTimeLeft(prev => Math.max(0, prev - deltaTime / 1000 * 20));
+        setInvincibilityTimeLeft(prev => {
+          const newValue = Math.max(0, prev - deltaTime / 5000 * 100);
+          return newValue;
+        });
       }
 
       gameLoopRef.current = requestAnimationFrame(gameLoop);
@@ -749,7 +752,13 @@ const Game: React.FC = () => {
             </div>
             <div className="flex items-center">
               {Array.from({ length: lives }).map((_, i) => (
-                <Heart key={i} size={20} color="red" fill="red" className="mr-1" />
+                <img 
+                  key={i} 
+                  src="/images/heart.png" 
+                  alt="Heart" 
+                  className="mr-1" 
+                  style={{ width: '20px', height: '20px' }} 
+                />
               ))}
             </div>
             
