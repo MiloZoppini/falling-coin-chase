@@ -88,7 +88,7 @@ const SheilaAnimation: React.FC<SheilaAnimationProps> = ({
       cancelAnimationFrame(animationId);
       clearInterval(walkInterval);
     };
-  }, [gameWidth, gameHeight, isAnimating, onAnimationComplete, floorLevel]);
+  }, [gameWidth, gameHeight, isAnimating, onAnimationComplete, floorLevel, walkFrame]);
 
   if (!isAnimating && opacity <= 0) return null;
 
@@ -117,8 +117,8 @@ const SheilaAnimation: React.FC<SheilaAnimationProps> = ({
           position: 'absolute',
           left: `${position.x}px`,
           top: `${position.y}px`,
-          width: '100px', // Increased size for better visibility
-          height: '120px', // Increased size for better visibility
+          width: '120px', // Even larger size for better visibility
+          height: '140px', // Even larger size for better visibility
           backgroundImage: `url('/images/Sheila.png')`,
           backgroundSize: 'contain',
           backgroundRepeat: 'no-repeat',
@@ -129,12 +129,12 @@ const SheilaAnimation: React.FC<SheilaAnimationProps> = ({
         }}
       />
 
-      {/* Add dynamic CSS for walking animation - fixed the jsx attribute */}
+      {/* Add dynamic CSS for walking animation */}
       <style>
         {`
         @keyframes sheila-step {
           0% { transform: translateY(0px); }
-          50% { transform: translateY(-3px); }
+          50% { transform: translateY(-5px); }
           100% { transform: translateY(0px); }
         }
         `}
