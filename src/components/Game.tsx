@@ -48,9 +48,9 @@ interface VodkaObject extends GameObject {
 type FallingObject = CoinObject | ObstacleObject | PowerUpObject | HeartObject | VodkaObject;
 
 const GAME_LEVELS = {
-  1: { speed: 0.2, spawnRate: 0.02, obstacleRate: 0.3, powerUpChance: 0.02, heartChance: 0.03, vodkaChance: 0.02 },
-  2: { speed: 0.3, spawnRate: 0.03, obstacleRate: 0.4, powerUpChance: 0.015, heartChance: 0.025, vodkaChance: 0.025 },
-  3: { speed: 0.4, spawnRate: 0.04, obstacleRate: 0.5, powerUpChance: 0.01, heartChance: 0.02, vodkaChance: 0.03 }
+  1: { speed: 0.2, spawnRate: 0.02, obstacleRate: 0.3, powerUpChance: 0.02, heartChance: 0.05, vodkaChance: 0.02 },
+  2: { speed: 0.3, spawnRate: 0.03, obstacleRate: 0.4, powerUpChance: 0.015, heartChance: 0.04, vodkaChance: 0.025 },
+  3: { speed: 0.4, spawnRate: 0.04, obstacleRate: 0.5, powerUpChance: 0.01, heartChance: 0.03, vodkaChance: 0.03 }
 };
 
 const COIN_TYPES = {
@@ -264,7 +264,7 @@ const Game: React.FC = () => {
       }
       
       const timeSinceLastHeart = now - lastHeartSpawnTime.current;
-      if (timeSinceLastHeart > 10000 && Math.random() < levelSettings.heartChance * deltaTime * 0.01) {
+      if (timeSinceLastHeart > 8000 && Math.random() < levelSettings.heartChance * deltaTime * 0.01) {
         createHeart();
         lastHeartSpawnTime.current = now;
       }
@@ -477,7 +477,7 @@ const Game: React.FC = () => {
     const newHeart: HeartObject = {
       id,
       x,
-      y: -30,
+      y: -30, // Start above the screen
       width,
       height,
       speed,
@@ -517,7 +517,7 @@ const Game: React.FC = () => {
           ...obj,
           y: obj.y + obj.speed * deltaTime
         }))
-        .filter(obj => obj.y < (gameHeight + obj.height))
+        .filter(obj => obj.y < (gameHeight + 50)) // Increased height threshold to ensure objects fully leave the screen
     );
   };
 
@@ -525,8 +525,12 @@ const Game: React.FC = () => {
     if (!playerRef.current) return;
 
     const playerRect = playerRef.current.getBoundingClientRect();
-    const playerX = playerRect.left;
-    const playerY = playerRect.top;
+    const gameRect = gameContainerRef.current?.getBoundingClientRect();
+    
+    if (!gameRect) return;
+    
+    const playerX = playerRect.left - gameRect.left;
+    const playerY = playerRect.top - gameRect.top;
     const playerWidth = playerRect.width;
     const playerHeight = playerRect.height;
 
@@ -550,6 +554,7 @@ const Game: React.FC = () => {
       let vodkaCollected = false;
 
       for (const obj of prev) {
+        // Calculate object position relative to game container
         const objectRect = {
           left: obj.x,
           top: obj.y,
@@ -922,158 +927,4 @@ const Game: React.FC = () => {
                   ? `url('${COIN_TYPES[(obj as CoinObject).coinType].imagePath}')` 
                   : obj.type === 'powerup' 
                     ? `url('/images/lemon.webp')` 
-                    : obj.type === 'heart'
-                      ? `url('/images/heart.png')`
-                      : obj.type === 'vodka'
-                        ? `url('/images/vodka.webp')`
-                        : `url('/images/nuke.png')`,
-                backgroundSize: 'contain',
-                backgroundPosition: 'center',
-                backgroundRepeat: 'no-repeat',
-              }}
-            ></div>
-          ))}
-          
-          <div className="game-stats">
-            <div className="flex items-center mb-2">
-              <Coins className="mr-2" size={20} color="gold" />
-              <span>{score}</span>
-            </div>
-            <div className="flex items-center mb-2">
-              <span className="mr-2">Level: {currentLevel}</span>
-            </div>
-            <div className="flex items-center">
-              {Array.from({ length: lives }).map((_, i) => (
-                <img 
-                  key={i} 
-                  src="/images/heart.png" 
-                  alt="Heart" 
-                  className="mr-1" 
-                  style={{ width: '20px', height: '20px' }} 
-                />
-              ))}
-            </div>
-            
-            {isInvincible && (
-              <div className="mt-2 w-full">
-                <div className="flex items-center text-yellow-400 mb-1">
-                  <Star size={16} className="mr-1" />
-                  <span>Invincible: {Math.ceil(invincibilityTimeLeft)}s</span>
-                </div>
-              </div>
-            )}
-            
-            {areControlsReversed && (
-              <div className="mt-2 w-full">
-                <div className="flex items-center text-red-400 mb-1">
-                  <span>Controls reversed: {Math.ceil(controlsReversedTimeLeft)}s</span>
-                </div>
-              </div>
-            )}
-            
-            <div className="player-name mt-2">
-              <span>{playerName}</span>
-            </div>
-          </div>
-          
-          {!isMobile && (
-            <div className="mobile-controls">
-              <button 
-                className="control-button left-button"
-                onTouchStart={startMovingLeft}
-                onTouchEnd={stopMovingLeft}
-                onMouseDown={startMovingLeft}
-                onMouseUp={stopMovingLeft}
-                onMouseLeave={stopMovingLeft}
-              >
-                &larr;
-              </button>
-              <button 
-                className="control-button right-button"
-                onTouchStart={startMovingRight}
-                onTouchEnd={stopMovingRight}
-                onMouseDown={startMovingRight}
-                onMouseUp={stopMovingRight}
-                onMouseLeave={stopMovingRight}
-              >
-                &rarr;
-              </button>
-            </div>
-          )}
-          
-          {isMobile && (
-            <div className="touch-controls">
-              <div 
-                className="touch-area left-area"
-                style={{
-                  position: 'absolute',
-                  left: 0,
-                  bottom: 0,
-                  width: '50%',
-                  height: '100%',
-                  zIndex: 5,
-                  opacity: 0
-                }}
-              />
-              <div 
-                className="touch-area right-area"
-                style={{
-                  position: 'absolute',
-                  right: 0,
-                  bottom: 0,
-                  width: '50%',
-                  height: '100%',
-                  zIndex: 5,
-                  opacity: 0
-                }}
-              />
-            </div>
-          )}
-        </>
-      )}
-      
-      <div className={`game-over ${isGameOver ? '' : 'hidden'}`}>
-        <h2 className="text-3xl font-bold mb-4">Game Over!</h2>
-        <p className="text-xl mb-2">Player: {playerName}</p>
-        <p className="text-xl mb-6">Final Score: {score}</p>
-        
-        {highScores.length > 0 && (
-          <div className="mb-6">
-            <div className="flex items-center gap-2 mb-3 justify-center">
-              <Trophy size={20} />
-              <h3 className="text-xl font-bold">Leaderboard</h3>
-            </div>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-12">Rank</TableHead>
-                  <TableHead>Player</TableHead>
-                  <TableHead className="text-right">Score</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {highScores.slice(0, 3).map((entry, index) => (
-                  <TableRow key={index}>
-                    <TableCell>
-                      <div className="flex items-center">
-                        <Medal size={18} color={getMedalColor(index)} fill={getMedalColor(index)} />
-                      </div>
-                    </TableCell>
-                    <TableCell>{entry.playerName}</TableCell>
-                    <TableCell className="text-right">{entry.score}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        )}
-        
-        <Button onClick={resetGame} className="px-6 py-2 bg-blue-600 hover:bg-blue-700">
-          Play Again
-        </Button>
-      </div>
-    </div>
-  );
-};
-
-export default Game;
+                    : obj.type === '
