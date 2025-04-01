@@ -21,7 +21,14 @@ export const getHighScores = async (): Promise<HighScore[]> => {
       return [];
     }
     
-    return data || [];
+    // Transform the data to match our HighScore interface
+    // This handles the case where Supabase returns playername (lowercase) but our interface uses playerName
+    return (data || []).map(item => ({
+      id: item.id,
+      playerName: item.playername, // Map playername to playerName
+      score: item.score,
+      created_at: item.created_at
+    }));
   } catch (error) {
     console.error('Failed to fetch high scores:', error);
     return [];
@@ -32,7 +39,7 @@ export const saveHighScore = async (playerName: string, score: number): Promise<
   try {
     const { error } = await supabase
       .from('high_scores')
-      .insert([{ playerName, score }]);
+      .insert([{ playername: playerName, score }]); // Use playername (lowercase) to match DB column
     
     if (error) {
       console.error('Error saving high score:', error);
