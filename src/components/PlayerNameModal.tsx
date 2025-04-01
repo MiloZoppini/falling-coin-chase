@@ -20,12 +20,12 @@ const PlayerNameModal: React.FC<PlayerNameModalProps> = ({ onSubmit }) => {
 
   return (
     <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/70">
-      <div className="bg-background p-6 rounded-lg shadow-lg max-w-md w-full font-pixel">
-        <h2 className="text-2xl font-bold mb-4 text-center">PRINT MONEY WITH MARTIN</h2>
+      <div className="bg-[#2D2D2D] p-6 rounded-md shadow-lg max-w-md w-full font-pixel border-4 border-[#505050] shadow-inner">
+        <h2 className="text-2xl font-bold mb-6 text-center text-[#FFDD00] drop-shadow-[2px_2px_0px_#000]">PRINT MONEY WITH MARTIN</h2>
         
         <form onSubmit={handleSubmit} className="mb-6">
-          <div className="mb-4">
-            <label htmlFor="playerName" className="block text-lg mb-2">
+          <div className="mb-6">
+            <label htmlFor="playerName" className="block text-lg mb-2 text-[#EEEEEE]">
               Enter Your Name:
             </label>
             <Input
@@ -33,20 +33,20 @@ const PlayerNameModal: React.FC<PlayerNameModalProps> = ({ onSubmit }) => {
               value={playerName}
               onChange={(e) => setPlayerName(e.target.value)}
               placeholder="Your Name"
-              className="w-full font-pixel"
+              className="w-full font-pixel bg-[#111111] border-2 border-[#555555] text-[#EEEEEE]"
               maxLength={15}
               autoFocus
               required
             />
           </div>
           
-          <Button 
-            type="submit" 
-            disabled={!playerName.trim()} 
-            className="w-full font-pixel"
+          <button
+            type="submit"
+            disabled={!playerName.trim()}
+            className="w-full font-pixel py-3 px-4 bg-[#5B8731] hover:bg-[#70A340] border-b-4 border-[#3E5E20] hover:border-[#5B8731] text-white font-bold transition-colors disabled:opacity-50 disabled:pointer-events-none active:border-b-0 active:border-t-4 active:mt-1 active:-mb-1"
           >
-            Start Game
-          </Button>
+            START GAME
+          </button>
         </form>
       </div>
     </div>
