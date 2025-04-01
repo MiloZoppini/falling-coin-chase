@@ -41,12 +41,16 @@ interface HeartObject extends GameObject {
   type: 'heart';
 }
 
-type FallingObject = CoinObject | ObstacleObject | PowerUpObject | HeartObject;
+interface VodkaObject extends GameObject {
+  type: 'vodka';
+}
+
+type FallingObject = CoinObject | ObstacleObject | PowerUpObject | HeartObject | VodkaObject;
 
 const GAME_LEVELS = {
-  1: { speed: 0.2, spawnRate: 0.02, obstacleRate: 0.3, powerUpChance: 0.02, heartChance: 0.01 },
-  2: { speed: 0.3, spawnRate: 0.03, obstacleRate: 0.4, powerUpChance: 0.015, heartChance: 0.008 },
-  3: { speed: 0.4, spawnRate: 0.04, obstacleRate: 0.5, powerUpChance: 0.01, heartChance: 0.006 }
+  1: { speed: 0.2, spawnRate: 0.02, obstacleRate: 0.3, powerUpChance: 0.02, heartChance: 0.03, vodkaChance: 0.02 },
+  2: { speed: 0.3, spawnRate: 0.03, obstacleRate: 0.4, powerUpChance: 0.015, heartChance: 0.025, vodkaChance: 0.025 },
+  3: { speed: 0.4, spawnRate: 0.04, obstacleRate: 0.5, powerUpChance: 0.01, heartChance: 0.02, vodkaChance: 0.03 }
 };
 
 const COIN_TYPES = {
@@ -93,10 +97,15 @@ const Game: React.FC = () => {
   const doublePointsTimeoutRef = useRef<number | null>(null);
   const lastPowerUpTime = useRef<number>(0);
   const lastHeartSpawnTime = useRef<number>(0);
+  const lastVodkaSpawnTime = useRef<number>(0);
 
   const [isMuscleMartin, setIsMuscleMartin] = useState<boolean>(false);
   const [isHurt, setIsHurt] = useState<boolean>(false);
   const hurtTimeoutRef = useRef<number | null>(null);
+  
+  const [areControlsReversed, setAreControlsReversed] = useState<boolean>(false);
+  const controlsReversedTimeoutRef = useRef<number | null>(null);
+  const [controlsReversedTimeLeft, setControlsReversedTimeLeft] = useState<number>(0);
 
   const [playerName, setPlayerName] = useState<string>('');
   const [showNameModal, setShowNameModal] = useState<boolean>(true);
@@ -143,6 +152,9 @@ const Game: React.FC = () => {
       if (doublePointsTimeoutRef.current) {
         clearTimeout(doublePointsTimeoutRef.current);
       }
+      if (controlsReversedTimeoutRef.current) {
+        clearTimeout(controlsReversedTimeoutRef.current);
+      }
     };
   }, []);
 
@@ -164,24 +176,46 @@ const Game: React.FC = () => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (isGameOver || isEjecting) return;
       
-      if (e.key === 'ArrowLeft' || e.key === 'a') {
-        keysPressed.current.left = true;
-        setIsWalking(true);
-      }
-      if (e.key === 'ArrowRight' || e.key === 'd') {
-        keysPressed.current.right = true;
-        setIsWalking(true);
+      if (areControlsReversed) {
+        if (e.key === 'ArrowRight' || e.key === 'd') {
+          keysPressed.current.left = true;
+          setIsWalking(true);
+        }
+        if (e.key === 'ArrowLeft' || e.key === 'a') {
+          keysPressed.current.right = true;
+          setIsWalking(true);
+        }
+      } else {
+        if (e.key === 'ArrowLeft' || e.key === 'a') {
+          keysPressed.current.left = true;
+          setIsWalking(true);
+        }
+        if (e.key === 'ArrowRight' || e.key === 'd') {
+          keysPressed.current.right = true;
+          setIsWalking(true);
+        }
       }
     };
 
     const handleKeyUp = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowLeft' || e.key === 'a') {
-        keysPressed.current.left = false;
-        if (!keysPressed.current.right) setIsWalking(false);
-      }
-      if (e.key === 'ArrowRight' || e.key === 'd') {
-        keysPressed.current.right = false;
-        if (!keysPressed.current.left) setIsWalking(false);
+      if (areControlsReversed) {
+        if (e.key === 'ArrowRight' || e.key === 'd') {
+          keysPressed.current.left = false;
+          if (!keysPressed.current.right) setIsWalking(false);
+        }
+        if (e.key === 'ArrowLeft' || e.key === 'a') {
+          keysPressed.current.right = false;
+          if (!keysPressed.current.left) setIsWalking(false);
+        }
+      } else {
+        if (e.key === 'ArrowLeft' || e.key === 'a') {
+          keysPressed.current.left = false;
+          if (!keysPressed.current.right) setIsWalking(false);
+        }
+        if (e.key === 'ArrowRight' || e.key === 'd') {
+          keysPressed.current.right = false;
+          if (!keysPressed.current.left) setIsWalking(false);
+        }
       }
     };
 
@@ -194,7 +228,7 @@ const Game: React.FC = () => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [isGameOver, isEjecting, isMobile]);
+  }, [isGameOver, isEjecting, isMobile, areControlsReversed]);
 
   useEffect(() => {
     if (!playerName || isGameOver || isPaused) {
@@ -230,9 +264,15 @@ const Game: React.FC = () => {
       }
       
       const timeSinceLastHeart = now - lastHeartSpawnTime.current;
-      if (timeSinceLastHeart > 20000 && Math.random() < levelSettings.heartChance * deltaTime * 0.01) {
+      if (timeSinceLastHeart > 10000 && Math.random() < levelSettings.heartChance * deltaTime * 0.01) {
         createHeart();
         lastHeartSpawnTime.current = now;
+      }
+      
+      const timeSinceLastVodka = now - lastVodkaSpawnTime.current;
+      if (timeSinceLastVodka > 12000 && Math.random() < levelSettings.vodkaChance * deltaTime * 0.01) {
+        createVodka();
+        lastVodkaSpawnTime.current = now;
       }
 
       updateFallingObjects(deltaTime);
@@ -246,13 +286,30 @@ const Game: React.FC = () => {
       if (isInvincible) {
         setInvincibilityTimeLeft(prev => {
           const newValue = Math.max(0, prev - deltaTime / 1000);
-          if (newValue <= 0 && invincibilityTimeoutRef.current) {
-            clearTimeout(invincibilityTimeoutRef.current);
+          if (newValue <= 0) {
+            if (invincibilityTimeoutRef.current) {
+              clearTimeout(invincibilityTimeoutRef.current);
+              invincibilityTimeoutRef.current = null;
+            }
             setIsInvincible(false);
             setIsMuscleMartin(false);
             if (gameContainerRef.current) {
               gameContainerRef.current.classList.remove('earthquake');
             }
+          }
+          return newValue;
+        });
+      }
+      
+      if (areControlsReversed) {
+        setControlsReversedTimeLeft(prev => {
+          const newValue = Math.max(0, prev - deltaTime / 1000);
+          if (newValue <= 0) {
+            if (controlsReversedTimeoutRef.current) {
+              clearTimeout(controlsReversedTimeoutRef.current);
+              controlsReversedTimeoutRef.current = null;
+            }
+            setAreControlsReversed(false);
           }
           return newValue;
         });
@@ -268,7 +325,7 @@ const Game: React.FC = () => {
         cancelAnimationFrame(gameLoopRef.current);
       }
     };
-  }, [isGameOver, isPaused, gameWidth, gameHeight, score, currentLevel, isEjecting, playerName, isInvincible]);
+  }, [isGameOver, isPaused, gameWidth, gameHeight, score, currentLevel, isEjecting, playerName, isInvincible, areControlsReversed]);
 
   useEffect(() => {
     lastPlayerPositionsRef.current.push({ x: playerPosition.x, direction: playerDirection });
@@ -430,6 +487,29 @@ const Game: React.FC = () => {
     setFallingObjects(prev => [...prev, newHeart]);
   };
 
+  const createVodka = () => {
+    if (!gameWidth) return;
+    
+    const id = Date.now() + Math.random();
+    const width = 36;
+    const height = 36;
+    const x = Math.random() * (gameWidth - width);
+    const levelSettings = GAME_LEVELS[currentLevel as keyof typeof GAME_LEVELS];
+    const speed = levelSettings.speed * 0.75;
+
+    const newVodka: VodkaObject = {
+      id,
+      x,
+      y: -30,
+      width,
+      height,
+      speed,
+      type: 'vodka'
+    };
+    
+    setFallingObjects(prev => [...prev, newVodka]);
+  };
+
   const updateFallingObjects = (deltaTime: number) => {
     setFallingObjects(prev => 
       prev
@@ -467,6 +547,7 @@ const Game: React.FC = () => {
       let powerupCollected = false;
       let powerupType: PowerUpObject['powerType'] | null = null;
       let heartCollected = false;
+      let vodkaCollected = false;
 
       for (const obj of prev) {
         const objectRect = {
@@ -495,6 +576,8 @@ const Game: React.FC = () => {
             powerupType = obj.powerType;
           } else if (obj.type === 'heart') {
             heartCollected = true;
+          } else if (obj.type === 'vodka') {
+            vodkaCollected = true;
           }
         } else {
           remaining.push(obj);
@@ -547,6 +630,10 @@ const Game: React.FC = () => {
       if (powerupCollected && powerupType) {
         handlePowerUp(powerupType);
       }
+      
+      if (vodkaCollected) {
+        handleVodkaEffect();
+      }
 
       return remaining;
     });
@@ -556,16 +643,16 @@ const Game: React.FC = () => {
     if (powerType === 'invincibility') {
       const invincibilityDuration = 5; // 5 seconds
       
+      if (invincibilityTimeoutRef.current) {
+        clearTimeout(invincibilityTimeoutRef.current);
+      }
+      
       setIsInvincible(true);
       setIsMuscleMartin(true);
       setInvincibilityTimeLeft(invincibilityDuration);
       
       if (gameContainerRef.current) {
         gameContainerRef.current.classList.add('earthquake');
-      }
-      
-      if (invincibilityTimeoutRef.current) {
-        clearTimeout(invincibilityTimeoutRef.current);
       }
       
       invincibilityTimeoutRef.current = window.setTimeout(() => {
@@ -576,8 +663,27 @@ const Game: React.FC = () => {
         if (gameContainerRef.current) {
           gameContainerRef.current.classList.remove('earthquake');
         }
+        
+        invincibilityTimeoutRef.current = null;
       }, invincibilityDuration * 1000);
     }
+  };
+  
+  const handleVodkaEffect = () => {
+    const vodkaDuration = 8; // 8 seconds of reversed controls
+    
+    if (controlsReversedTimeoutRef.current) {
+      clearTimeout(controlsReversedTimeoutRef.current);
+    }
+    
+    setAreControlsReversed(true);
+    setControlsReversedTimeLeft(vodkaDuration);
+    
+    controlsReversedTimeoutRef.current = window.setTimeout(() => {
+      setAreControlsReversed(false);
+      setControlsReversedTimeLeft(0);
+      controlsReversedTimeoutRef.current = null;
+    }, vodkaDuration * 1000);
   };
 
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -589,12 +695,22 @@ const Game: React.FC = () => {
     keysPressed.current.left = false;
     keysPressed.current.right = false;
     
-    if (touchX < centerX) {
-      keysPressed.current.left = true;
-      setPlayerDirection('left');
+    if (areControlsReversed) {
+      if (touchX >= centerX) {
+        keysPressed.current.left = true;
+        setPlayerDirection('left');
+      } else {
+        keysPressed.current.right = true;
+        setPlayerDirection('right');
+      }
     } else {
-      keysPressed.current.right = true;
-      setPlayerDirection('right');
+      if (touchX < centerX) {
+        keysPressed.current.left = true;
+        setPlayerDirection('left');
+      } else {
+        keysPressed.current.right = true;
+        setPlayerDirection('right');
+      }
     }
     
     setIsWalking(true);
@@ -609,12 +725,22 @@ const Game: React.FC = () => {
     keysPressed.current.left = false;
     keysPressed.current.right = false;
     
-    if (touchX < centerX) {
-      keysPressed.current.left = true;
-      setPlayerDirection('left');
+    if (areControlsReversed) {
+      if (touchX >= centerX) {
+        keysPressed.current.left = true;
+        setPlayerDirection('left');
+      } else {
+        keysPressed.current.right = true;
+        setPlayerDirection('right');
+      }
     } else {
-      keysPressed.current.right = true;
-      setPlayerDirection('right');
+      if (touchX < centerX) {
+        keysPressed.current.left = true;
+        setPlayerDirection('left');
+      } else {
+        keysPressed.current.right = true;
+        setPlayerDirection('right');
+      }
     }
   };
 
@@ -661,6 +787,7 @@ const Game: React.FC = () => {
     setIsHurt(false);
     setIsEjecting(false);
     setSavedScore(false);
+    setAreControlsReversed(false);
     lastPowerUpTime.current = 0;
     
     const gameOverElement = document.querySelector('.game-over');
@@ -670,14 +797,22 @@ const Game: React.FC = () => {
     
     if (invincibilityTimeoutRef.current) {
       clearTimeout(invincibilityTimeoutRef.current);
+      invincibilityTimeoutRef.current = null;
     }
     
     if (doublePointsTimeoutRef.current) {
       clearTimeout(doublePointsTimeoutRef.current);
+      doublePointsTimeoutRef.current = null;
     }
     
     if (hurtTimeoutRef.current) {
       clearTimeout(hurtTimeoutRef.current);
+      hurtTimeoutRef.current = null;
+    }
+    
+    if (controlsReversedTimeoutRef.current) {
+      clearTimeout(controlsReversedTimeoutRef.current);
+      controlsReversedTimeoutRef.current = null;
     }
   };
 
@@ -695,6 +830,7 @@ const Game: React.FC = () => {
     setIsHurt(false);
     setIsEjecting(false);
     setSavedScore(false);
+    setAreControlsReversed(false);
     lastPowerUpTime.current = 0;
   };
 
@@ -729,7 +865,7 @@ const Game: React.FC = () => {
         <>
           <div 
             ref={playerRef} 
-            className={`player ${isInvincible ? 'invincible' : ''} ${hasDoublePoints ? 'double-points' : ''} ${isWalking ? 'walking' : ''} ${isHurt ? 'hurt' : ''} ${isEjecting ? 'ejecting' : ''}`}
+            className={`player ${isInvincible ? 'invincible' : ''} ${hasDoublePoints ? 'double-points' : ''} ${isWalking ? 'walking' : ''} ${isHurt ? 'hurt' : ''} ${isEjecting ? 'ejecting' : ''} ${areControlsReversed ? 'drunk' : ''}`}
             style={{ 
               left: `${playerPosition.x}px`,
               bottom: `100px`,
@@ -772,7 +908,9 @@ const Game: React.FC = () => {
                     ? 'obstacle' 
                     : obj.type === 'heart'
                       ? 'heart'
-                      : `powerup powerup-${obj.powerType}`
+                      : obj.type === 'vodka'
+                        ? 'vodka'
+                        : `powerup powerup-${(obj as PowerUpObject).powerType}`
               }
               style={{
                 left: `${obj.x}px`,
@@ -786,7 +924,9 @@ const Game: React.FC = () => {
                     ? `url('/images/lemon.webp')` 
                     : obj.type === 'heart'
                       ? `url('/images/heart.png')`
-                      : `url('/images/nuke.png')`,
+                      : obj.type === 'vodka'
+                        ? `url('/images/vodka.webp')`
+                        : `url('/images/nuke.png')`,
                 backgroundSize: 'contain',
                 backgroundPosition: 'center',
                 backgroundRepeat: 'no-repeat',
@@ -819,6 +959,14 @@ const Game: React.FC = () => {
                 <div className="flex items-center text-yellow-400 mb-1">
                   <Star size={16} className="mr-1" />
                   <span>Invincible: {Math.ceil(invincibilityTimeLeft)}s</span>
+                </div>
+              </div>
+            )}
+            
+            {areControlsReversed && (
+              <div className="mt-2 w-full">
+                <div className="flex items-center text-red-400 mb-1">
+                  <span>Controls reversed: {Math.ceil(controlsReversedTimeLeft)}s</span>
                 </div>
               </div>
             )}

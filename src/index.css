@@ -104,6 +104,73 @@
     filter: drop-shadow(0 0 8px rgba(255, 0, 0, 0.8));
   }
   
+  .player.drunk {
+    animation: drunk-effect 1s ease-in-out infinite;
+    filter: drop-shadow(0 0 8px rgba(148, 0, 211, 0.6));
+  }
+  
+  @keyframes drunk-effect {
+    0% { 
+      transform: translateY(0) rotate(0deg); 
+    }
+    25% { 
+      transform: translateY(-2px) rotate(-3deg); 
+    }
+    50% { 
+      transform: translateY(0) rotate(0deg); 
+    }
+    75% { 
+      transform: translateY(-2px) rotate(3deg); 
+    }
+    100% { 
+      transform: translateY(0) rotate(0deg); 
+    }
+  }
+  
+  .player.drunk.walking {
+    animation: drunk-walk 0.6s infinite;
+  }
+  
+  @keyframes drunk-walk {
+    0% {
+      transform: translateY(0px) rotate(-2deg) scaleX(1);
+    }
+    25% {
+      transform: translateY(-4px) rotate(0deg) scaleX(1);
+    }
+    50% {
+      transform: translateY(0px) rotate(2deg) scaleX(1);
+    }
+    75% {
+      transform: translateY(-4px) rotate(0deg) scaleX(1);
+    }
+    100% {
+      transform: translateY(0px) rotate(-2deg) scaleX(1);
+    }
+  }
+  
+  .player.drunk.walking[style*="scaleX(-1)"] {
+    animation: drunk-walk-flipped 0.6s infinite;
+  }
+  
+  @keyframes drunk-walk-flipped {
+    0% {
+      transform: translateY(0px) rotate(-2deg) scaleX(-1);
+    }
+    25% {
+      transform: translateY(-4px) rotate(0deg) scaleX(-1);
+    }
+    50% {
+      transform: translateY(0px) rotate(2deg) scaleX(-1);
+    }
+    75% {
+      transform: translateY(-4px) rotate(0deg) scaleX(-1);
+    }
+    100% {
+      transform: translateY(0px) rotate(-2deg) scaleX(-1);
+    }
+  }
+  
   @keyframes hurt-effect {
     0% { 
       opacity: 1;
@@ -313,6 +380,20 @@
     border-radius: 50%;
     z-index: 5;
     animation: spin 2s linear infinite;
+  }
+  
+  .vodka {
+    position: absolute;
+    width: 36px;
+    height: 36px;
+    z-index: 5;
+    animation: wobble 1.5s ease-in-out infinite;
+  }
+  
+  @keyframes wobble {
+    0% { transform: rotate(-5deg); }
+    50% { transform: rotate(5deg); }
+    100% { transform: rotate(-5deg); }
   }
   
   .powerup-invincibility {
