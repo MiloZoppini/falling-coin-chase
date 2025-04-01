@@ -271,7 +271,7 @@ const Game: React.FC = () => {
       }
       
       const timeSinceLastHeart = now - lastHeartSpawnTime.current;
-      if (timeSinceLastHeart > 10000 && Math.random() < levelSettings.heartChance * deltaTime * 0.01) {
+      if (lives < 5 && timeSinceLastHeart > 10000 && Math.random() < levelSettings.heartChance * deltaTime * 0.01) {
         createHeart();
         lastHeartSpawnTime.current = now;
       }
@@ -323,6 +323,7 @@ const Game: React.FC = () => {
               controlsReversedTimeoutRef.current = null;
             }
             setAreControlsReversed(false);
+            setIsVodkaActive(false);
           }
           return newValue;
         });
@@ -338,7 +339,7 @@ const Game: React.FC = () => {
         cancelAnimationFrame(gameLoopRef.current);
       }
     };
-  }, [isGameOver, isPaused, gameWidth, gameHeight, score, currentLevel, isEjecting, playerName, isInvincible, areControlsReversed, isDogWalking]);
+  }, [isGameOver, isPaused, gameWidth, gameHeight, score, currentLevel, isEjecting, playerName, isInvincible, areControlsReversed, isDogWalking, lives]);
 
   useEffect(() => {
     lastPlayerPositionsRef.current.push({ x: playerPosition.x, direction: playerDirection });
@@ -916,10 +917,10 @@ const Game: React.FC = () => {
             style={{ 
               left: `${playerPosition.x}px`,
               bottom: `100px`,
-              backgroundImage: isVodkaActive 
-                ? `url('/images/martin_vodka.png')`
-                : isMuscleMartin 
-                  ? `url('/images/MuscleMartin.png')`
+              backgroundImage: isMuscleMartin
+                ? `url('/images/MuscleMartin.png')`
+                : isVodkaActive 
+                  ? `url('/images/martin_vodka.png')`
                   : `url('/images/Martin.png')`,
               backgroundSize: 'contain',
               backgroundRepeat: 'no-repeat',
