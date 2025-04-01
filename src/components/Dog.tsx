@@ -20,7 +20,10 @@ const Dog: React.FC<DogProps> = ({ position, isWalking }) => {
         backgroundPosition: 'center',
         transform: position.direction === 'left' ? 'scaleX(-1)' : 'scaleX(1)',
         width: '40px',
-        height: '40px'
+        height: '40px',
+        position: 'absolute',
+        zIndex: 9,
+        transition: 'left 0.3s ease-out'
       }}
     ></div>
   );
