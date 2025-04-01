@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useToast } from "@/components/ui/use-toast";
 import Player from './Player';
@@ -62,7 +61,6 @@ const Game: React.FC = () => {
     resetPowerUps
   } = usePowerUps();
 
-  // Initialize the game
   useEffect(() => {
     const handleResize = () => {
       if (gameContainerRef.current) {
@@ -99,7 +97,6 @@ const Game: React.FC = () => {
     };
   }, [toast, cleanupPowerUps]);
 
-  // Handle keyboard controls
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (isGameOver) return;
@@ -134,7 +131,6 @@ const Game: React.FC = () => {
     };
   }, [isGameOver]);
 
-  // Main game loop
   useEffect(() => {
     if (isGameOver || isPaused) return;
 
@@ -186,22 +182,23 @@ const Game: React.FC = () => {
     };
   }, [isGameOver, isPaused, gameWidth, gameHeight, score, currentLevel, toast, isInvincible, isMuscleMartin, hasDoublePoints]);
 
-  // Update dog position based on player movement
   useEffect(() => {
     lastPlayerPositionsRef.current.push({ x: playerPosition.x, direction: playerDirection });
     
-    if (lastPlayerPositionsRef.current.length > 15) {
+    if (lastPlayerPositionsRef.current.length > 20) {
       lastPlayerPositionsRef.current.shift();
     }
     
     if (lastPlayerPositionsRef.current.length >= 10) {
       const targetPosition = lastPlayerPositionsRef.current[0];
+      const dogOffset = 40;
+      
       let dogX = targetPosition.x;
       
       if (targetPosition.direction === 'right') {
-        dogX = dogX - 60;
+        dogX = dogX - dogOffset;
       } else {
-        dogX = dogX + 60;
+        dogX = dogX + dogOffset;
       }
       
       setDogPosition({
