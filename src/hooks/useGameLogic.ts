@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from 'react';
 import { 
   FallingObject, CoinObject, ObstacleObject, PowerUpObject, 
@@ -104,7 +103,6 @@ export const useGameLogic = (
 
   const playerSpeed = 5;
 
-  // Load high scores
   useEffect(() => {
     const loadHighScores = async () => {
       const scores = await getHighScores();
@@ -114,7 +112,6 @@ export const useGameLogic = (
     loadHighScores();
   }, []);
 
-  // Handle window resize
   useEffect(() => {
     const handleResize = () => {
       if (gameContainerRef.current) {
@@ -155,7 +152,6 @@ export const useGameLogic = (
     };
   }, []);
 
-  // Save high score when game is over
   useEffect(() => {
     if (gameState.isGameOver && !gameState.savedScore && playerName) {
       const saveScore = async () => {
@@ -170,7 +166,6 @@ export const useGameLogic = (
     }
   }, [gameState.isGameOver, gameState.savedScore, playerName, gameState.score]);
 
-  // Main game loop
   useEffect(() => {
     if (!playerName || gameState.isGameOver || gameState.isPaused) {
       if (gameLoopRef.current) {
@@ -213,7 +208,6 @@ export const useGameLogic = (
 
       movePlayer();
 
-      // Move sheila and hammer
       if (gameState.sheila.visible) {
         setGameState(prev => {
           const newSheilaX = prev.sheila.x + 2;
@@ -235,42 +229,36 @@ export const useGameLogic = (
 
       const levelSettings = GAME_LEVELS[gameState.currentLevel as keyof typeof GAME_LEVELS];
       
-      // Create falling objects
       if (Math.random() < levelSettings.spawnRate * deltaTime * 0.1) {
         createFallingObject();
       }
 
       const now = Date.now();
       
-      // Create power-ups
       const timeSinceLastPowerUp = now - lastPowerUpTime.current;
       if (timeSinceLastPowerUp > 15000 && Math.random() < levelSettings.powerUpChance * deltaTime * 0.01) {
         createPowerUp();
         lastPowerUpTime.current = now;
       }
       
-      // Create hearts
       const timeSinceLastHeart = now - lastHeartSpawnTime.current;
       if (gameState.lives < 5 && timeSinceLastHeart > 10000 && Math.random() < levelSettings.heartChance * deltaTime * 0.01) {
         createHeart();
         lastHeartSpawnTime.current = now;
       }
       
-      // Create vodka
       const timeSinceLastVodka = now - lastVodkaSpawnTime.current;
       if (timeSinceLastVodka > 12000 && Math.random() < levelSettings.vodkaChance * deltaTime * 0.01) {
         createVodka();
         lastVodkaSpawnTime.current = now;
       }
       
-      // Create poop
       const timeSinceLastPoop = now - lastPoopTime.current;
       if (timeSinceLastPoop > 5000 && Math.random() < levelSettings.poopChance * deltaTime * 0.01 && gameState.isDogWalking) {
         createPoop();
         lastPoopTime.current = now;
       }
       
-      // Auto-create poop
       const timeSinceLastAutoPoop = now - lastAutoPoopTime.current;
       if (timeSinceLastAutoPoop > AUTO_POOP_INTERVAL) {
         createPoop();
@@ -280,13 +268,11 @@ export const useGameLogic = (
       updateFallingObjects(deltaTime);
       checkCollisions();
 
-      // Update level
       const newLevel = Math.min(3, Math.floor(gameState.score / 1500) + 1);
       if (newLevel !== gameState.currentLevel) {
         setGameState(prev => ({ ...prev, currentLevel: newLevel }));
       }
 
-      // Update invincibility timer
       if (gameState.isInvincible) {
         setGameState(prev => {
           const newTimeLeft = Math.max(0, prev.invincibilityTimeLeft - deltaTime / 1000);
@@ -314,7 +300,6 @@ export const useGameLogic = (
         });
       }
       
-      // Update reversed controls timer
       if (gameState.areControlsReversed) {
         setGameState(prev => {
           const newTimeLeft = Math.max(0, prev.controlsReversedTimeLeft - deltaTime / 1000);
@@ -357,7 +342,6 @@ export const useGameLogic = (
       gameState.currentLevel, gameState.isEjecting, gameState.isInvincible, gameState.areControlsReversed, 
       gameState.isDogWalking, gameState.lives, gameState.sheila.visible]);
 
-  // Update dog position based on player position
   useEffect(() => {
     lastPlayerPositionsRef.current.push({ 
       x: gameState.playerPosition.x, 
@@ -389,7 +373,6 @@ export const useGameLogic = (
     }
   }, [gameState.playerPosition, gameState.playerDirection, gameState.isWalking]);
 
-  // Function to move the player
   const movePlayer = () => {
     if (gameState.isEjecting) return;
     
@@ -419,7 +402,6 @@ export const useGameLogic = (
     });
   };
 
-  // Function to create falling objects
   const createFallingObject = () => {
     if (!gameWidth) return;
 
@@ -431,19 +413,17 @@ export const useGameLogic = (
 
     if (isCoin) {
       const rand = Math.random();
-      let coinType: keyof typeof COIN_TYPES;
+      let coinType: 'bitcoin' | 'moneycash' | 'saccosoldi' = 'bitcoin';
       let cumulativeProbability = 0;
       
       for (const type in COIN_TYPES) {
         const typeKey = type as keyof typeof COIN_TYPES;
         cumulativeProbability += COIN_TYPES[typeKey].probability;
         if (rand < cumulativeProbability) {
-          coinType = typeKey;
+          coinType = typeKey as 'bitcoin' | 'moneycash' | 'saccosoldi';
           break;
         }
       }
-      
-      coinType = coinType || 'bitcoin';
       
       const coinInfo = COIN_TYPES[coinType];
       const width = coinInfo.width;
@@ -488,7 +468,6 @@ export const useGameLogic = (
     }
   };
 
-  // Function to create power-ups
   const createPowerUp = () => {
     if (!gameWidth) return;
     
@@ -517,7 +496,6 @@ export const useGameLogic = (
     }));
   };
 
-  // Function to create hearts
   const createHeart = () => {
     if (!gameWidth) return;
     
@@ -544,7 +522,6 @@ export const useGameLogic = (
     }));
   };
 
-  // Function to create vodka
   const createVodka = () => {
     if (!gameWidth) return;
     
@@ -571,7 +548,6 @@ export const useGameLogic = (
     }));
   };
 
-  // Function to create poop
   const createPoop = () => {
     if (!gameWidth || !dogRef.current) return;
     
@@ -604,7 +580,6 @@ export const useGameLogic = (
     }));
   };
 
-  // Function to update falling objects
   const updateFallingObjects = (deltaTime: number) => {
     const now = Date.now();
     
@@ -647,7 +622,6 @@ export const useGameLogic = (
     });
   };
 
-  // Function to check collisions
   const checkCollisions = () => {
     if (!playerRef.current) return;
 
@@ -770,7 +744,6 @@ export const useGameLogic = (
     });
   };
 
-  // Function to handle power-ups
   const handlePowerUp = (powerType: PowerUpObject['powerType']) => {
     if (powerType === 'invincibility') {
       const invincibilityDuration = 5;
@@ -807,7 +780,6 @@ export const useGameLogic = (
     }
   };
   
-  // Function to handle vodka effect
   const handleVodkaEffect = () => {
     const vodkaDuration = 8;
     
@@ -834,7 +806,6 @@ export const useGameLogic = (
     }, vodkaDuration * 1000);
   };
 
-  // Function to handle touch start
   const handleTouchStart = (e: React.TouchEvent) => {
     if (gameState.isGameOver || gameState.isEjecting) return;
     
@@ -865,7 +836,6 @@ export const useGameLogic = (
     setGameState(prev => ({ ...prev, isWalking: true }));
   };
 
-  // Function to handle touch move
   const handleTouchMove = (e: React.TouchEvent) => {
     if (gameState.isGameOver || gameState.isEjecting) return;
     
@@ -894,14 +864,12 @@ export const useGameLogic = (
     }
   };
 
-  // Function to handle touch end
   const handleTouchEnd = () => {
     keysPressed.current.left = false;
     keysPressed.current.right = false;
     setGameState(prev => ({ ...prev, isWalking: false }));
   };
 
-  // Function to start moving left
   const startMovingLeft = () => {
     if (!gameState.isGameOver && !gameState.isEjecting) {
       keysPressed.current.left = true;
@@ -913,7 +881,6 @@ export const useGameLogic = (
     }
   };
 
-  // Function to stop moving left
   const stopMovingLeft = () => {
     keysPressed.current.left = false;
     if (!keysPressed.current.right) {
@@ -921,7 +888,6 @@ export const useGameLogic = (
     }
   };
 
-  // Function to start moving right
   const startMovingRight = () => {
     if (!gameState.isGameOver && !gameState.isEjecting) {
       keysPressed.current.right = true;
@@ -933,7 +899,6 @@ export const useGameLogic = (
     }
   };
 
-  // Function to stop moving right
   const stopMovingRight = () => {
     keysPressed.current.right = false;
     if (!keysPressed.current.left) {
@@ -941,7 +906,6 @@ export const useGameLogic = (
     }
   };
 
-  // Function to reset the game
   const resetGame = () => {
     setGameState({
       score: 0,
