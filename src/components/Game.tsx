@@ -562,7 +562,7 @@ const Game: React.FC = () => {
         style={{ 
           left: `${dogPosition.x}px`,
           bottom: `100px`,
-          backgroundImage: `url('/images/Dog.png')`,
+          backgroundImage: `url('/images/Dog.png?v=${Date.now()}')`,
           backgroundSize: 'contain',
           backgroundRepeat: 'no-repeat',
           backgroundPosition: 'center',
