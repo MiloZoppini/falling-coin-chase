@@ -761,7 +761,7 @@ const Game: React.FC = () => {
                 top: `${obj.y}px`,
                 width: `${obj.width}px`,
                 height: `${obj.height}px`,
-                borderRadius: obj.type === 'coin' ? '50%' : obj.type === 'powerup' ? '0' : '0px',
+                backgroundColor: 'transparent',
                 backgroundImage: obj.type === 'coin' 
                   ? `url('${COIN_TYPES[(obj as CoinObject).coinType].imagePath}')` 
                   : obj.type === 'powerup' 

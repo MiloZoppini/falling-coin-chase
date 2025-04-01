@@ -293,8 +293,8 @@
     position: absolute;
     width: 30px;
     height: 30px;
-    background-color: hsl(var(--coin-color));
-    border-radius: 50%;
+    background-color: transparent !important;
+    border-radius: 0;
     z-index: 5;
   }
 
@@ -303,6 +303,7 @@
     width: 40px;
     height: 40px;
     z-index: 5;
+    background-color: transparent !important;
   }
   
   .powerup {
