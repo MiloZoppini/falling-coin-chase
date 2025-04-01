@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Coins, Heart, Star } from 'lucide-react';
@@ -393,14 +392,9 @@ const Game: React.FC = () => {
         description: "Martin transforms into MuscleMartin! Invincible for 5 seconds!",
       });
       
-      // Apply earthquake effect
+      // Apply earthquake effect for the entire invincibility duration
       if (gameContainerRef.current) {
         gameContainerRef.current.classList.add('earthquake');
-        setTimeout(() => {
-          if (gameContainerRef.current) {
-            gameContainerRef.current.classList.remove('earthquake');
-          }
-        }, 500);
       }
       
       if (invincibilityTimeoutRef.current) {
@@ -410,6 +404,12 @@ const Game: React.FC = () => {
       invincibilityTimeoutRef.current = window.setTimeout(() => {
         setIsInvincible(false);
         setIsMuscleMartin(false);
+        
+        // Remove earthquake effect when invincibility ends
+        if (gameContainerRef.current) {
+          gameContainerRef.current.classList.remove('earthquake');
+        }
+        
         toast({
           title: "Invincibility ended!",
           description: "Be careful now!",
