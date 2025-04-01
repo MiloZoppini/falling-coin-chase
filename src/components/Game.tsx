@@ -50,6 +50,22 @@ interface PoopObject extends GameObject {
   onGround: boolean;
 }
 
+interface SheilaObject {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  visible: boolean;
+}
+
+interface HammerObject {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  visible: boolean;
+}
+
 type FallingObject = CoinObject | ObstacleObject | PowerUpObject | HeartObject | VodkaObject | PoopObject;
 
 const GAME_LEVELS = {
@@ -65,9 +81,10 @@ const COIN_TYPES = {
 };
 
 const POOP_POINT_VALUE = 150;
-const POOP_WIDTH = 29;
-const POOP_HEIGHT = 29;
+const POOP_WIDTH = 29 * 0.8;
+const POOP_HEIGHT = 29 * 0.8;
 const AUTO_POOP_INTERVAL = 10000;
+const SHEILA_ENTRANCE_DELAY = 20000;
 
 const Game: React.FC = () => {
   const isMobile = useIsMobile();
@@ -92,7 +109,20 @@ const Game: React.FC = () => {
   const [isDogWalking, setIsDogWalking] = useState<boolean>(false);
   const [isEjecting, setIsEjecting] = useState<boolean>(false);
   const [isVodkaActive, setIsVodkaActive] = useState<boolean>(false);
-  
+  const [sheila, setSheila] = useState<SheilaObject>({
+    x: -100,
+    y: 100,
+    width: 72,
+    height: 72,
+    visible: false
+  });
+  const [hammer, setHammer] = useState<HammerObject>({
+    x: -150,
+    y: 100,
+    width: 50,
+    height: 50,
+    visible: false
+  });
   const keysPressed = useRef<{left: boolean, right: boolean}>({
     left: false,
     right: false
@@ -124,6 +154,7 @@ const Game: React.FC = () => {
   const [showNameModal, setShowNameModal] = useState<boolean>(true);
   const [highScores, setHighScores] = useState<HighScore[]>([]);
   const [savedScore, setSavedScore] = useState<boolean>(false);
+  const gameStartTimeRef = useRef<number>(0);
 
   useEffect(() => {
     const loadHighScores = async () => {
@@ -252,6 +283,26 @@ const Game: React.FC = () => {
       return;
     }
     
+    if (gameStartTimeRef.current === 0) {
+      gameStartTimeRef.current = Date.now();
+      
+      const sheilaEntranceTimeoutRef = window.setTimeout(() => {
+        setSheila(prev => ({
+          ...prev,
+          x: -100,
+          visible: true
+        }));
+        
+        setHammer(prev => ({
+          ...prev,
+          x: -150,
+          visible: true
+        }));
+        
+        sheilaEntranceTimeoutRef.current = null;
+      }, SHEILA_ENTRANCE_DELAY);
+    }
+    
     const gameLoop = (timestamp: number) => {
       const deltaTime = timestamp - lastFrameTimeRef.current;
       lastFrameTimeRef.current = timestamp;
@@ -262,6 +313,28 @@ const Game: React.FC = () => {
       }
 
       movePlayer();
+
+      if (sheila.visible) {
+        setSheila(prev => {
+          const newX = prev.x + 2;
+          
+          if (newX > gameWidth + 100) {
+            return { ...prev, x: -100 };
+          }
+          
+          return { ...prev, x: newX };
+        });
+        
+        setHammer(prev => {
+          const newX = prev.x + 2;
+          
+          if (newX > gameWidth + 100) {
+            return { ...prev, x: -150 };
+          }
+          
+          return { ...prev, x: newX };
+        });
+      }
 
       const levelSettings = GAME_LEVELS[currentLevel as keyof typeof GAME_LEVELS];
       
@@ -349,6 +422,11 @@ const Game: React.FC = () => {
     return () => {
       if (gameLoopRef.current) {
         cancelAnimationFrame(gameLoopRef.current);
+      }
+      
+      if (sheilaEntranceTimeoutRef.current) {
+        clearTimeout(sheilaEntranceTimeoutRef.current);
+        sheilaEntranceTimeoutRef.current = null;
       }
     };
   }, [isGameOver, isPaused, gameWidth, gameHeight, score, currentLevel, isEjecting, playerName, isInvincible, areControlsReversed, isDogWalking, lives]);
@@ -876,6 +954,21 @@ const Game: React.FC = () => {
     setIsEjecting(false);
     setSavedScore(false);
     setAreControlsReversed(false);
+    setSheila({
+      x: -100,
+      y: 100,
+      width: 72,
+      height: 72,
+      visible: false
+    });
+    setHammer({
+      x: -150,
+      y: 100,
+      width: 50,
+      height: 50,
+      visible: false
+    });
+    gameStartTimeRef.current = 0;
     lastPowerUpTime.current = 0;
     
     const gameOverElement = document.querySelector('.game-over');
@@ -919,6 +1012,21 @@ const Game: React.FC = () => {
     setIsEjecting(false);
     setSavedScore(false);
     setAreControlsReversed(false);
+    setSheila({
+      x: -100,
+      y: 100,
+      width: 72,
+      height: 72,
+      visible: false
+    });
+    setHammer({
+      x: -150,
+      y: 100,
+      width: 50,
+      height: 50,
+      visible: false
+    });
+    gameStartTimeRef.current = 0;
     lastPowerUpTime.current = 0;
   };
 
@@ -951,6 +1059,42 @@ const Game: React.FC = () => {
       
       {playerName && (
         <>
+          {sheila.visible && (
+            <div 
+              className="sheila"
+              style={{ 
+                position: 'absolute',
+                left: `${sheila.x}px`,
+                top: `${sheila.y}px`,
+                width: `${sheila.width}px`,
+                height: `${sheila.height}px`,
+                backgroundImage: `url('/images/Sheila.png')`,
+                backgroundSize: 'contain',
+                backgroundRepeat: 'no-repeat',
+                backgroundPosition: 'center',
+                zIndex: 1
+              }}
+            />
+          )}
+          
+          {hammer.visible && (
+            <div 
+              className="hammer"
+              style={{ 
+                position: 'absolute',
+                left: `${hammer.x}px`,
+                top: `${hammer.y}px`,
+                width: `${hammer.width}px`,
+                height: `${hammer.height}px`,
+                backgroundImage: `url('/images/martello.png')`,
+                backgroundSize: 'contain',
+                backgroundRepeat: 'no-repeat',
+                backgroundPosition: 'center',
+                zIndex: 1
+              }}
+            />
+          )}
+          
           <div 
             ref={playerRef} 
             className={`player ${isInvincible ? 'invincible' : ''} ${hasDoublePoints ? 'double-points' : ''} ${isWalking ? 'walking' : ''} ${isHurt ? 'hurt' : ''} ${isEjecting ? 'ejecting' : ''} ${areControlsReversed ? 'drunk' : ''}`}
@@ -968,7 +1112,8 @@ const Game: React.FC = () => {
               transform: playerDirection === 'left' ? 'scaleX(-1)' : 'scaleX(1)',
               transition: 'transform 0.2s ease-out',
               width: isInvincible ? '108px' : '72px',
-              height: '72px'
+              height: '72px',
+              zIndex: 2
             }}
           ></div>
           
@@ -984,7 +1129,8 @@ const Game: React.FC = () => {
               backgroundPosition: 'center',
               transform: dogPosition.direction === 'left' ? 'scaleX(-1)' : 'scaleX(1)',
               width: '40px',
-              height: '40px'
+              height: '40px',
+              zIndex: 2
             }}
           ></div>
           
@@ -1023,7 +1169,8 @@ const Game: React.FC = () => {
                           : `url('/images/nuke.png')`,
                 backgroundSize: 'contain',
                 backgroundRepeat: 'no-repeat',
-                backgroundPosition: 'center'
+                backgroundPosition: 'center',
+                zIndex: 2
               }}
             ></div>
           ))}
