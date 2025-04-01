@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Coins, Heart, Star } from 'lucide-react';
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 
 // Game objects interfaces
 interface GameObject {
@@ -493,7 +493,7 @@ const Game: React.FC = () => {
   return (
     <div 
       ref={gameContainerRef} 
-      className="game-container"
+      className={`game-container ${isInvincible ? 'earthquake' : ''}`}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}

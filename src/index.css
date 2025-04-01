@@ -56,6 +56,26 @@
     overflow: hidden;
     background-color: hsl(var(--game-bg));
   }
+  
+  @keyframes earthquake {
+    0% { transform: translate(0, 0); }
+    10% { transform: translate(-5px, -5px); }
+    20% { transform: translate(5px, 5px); }
+    30% { transform: translate(-7px, 7px); }
+    40% { transform: translate(7px, -7px); }
+    50% { transform: translate(-5px, 5px); }
+    60% { transform: translate(5px, -5px); }
+    70% { transform: translate(-3px, -3px); }
+    80% { transform: translate(3px, 3px); }
+    90% { transform: translate(-2px, 2px); }
+    100% { transform: translate(0, 0); }
+  }
+  
+  .game-container.earthquake {
+    animation: earthquake 0.5s infinite;
+    background-size: 110% 110% !important;
+    transform-origin: center center;
+  }
 
   .player {
     position: absolute;
