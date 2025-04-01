@@ -47,7 +47,6 @@
     touch-action: manipulation;
   }
 
-  /* Game styles */
   .game-container {
     position: fixed;
     top: 0;
@@ -68,7 +67,6 @@
     z-index: 10;
   }
   
-  /* Dog follower styles */
   .dog {
     position: absolute;
     width: 40px;
@@ -80,7 +78,6 @@
     transition: left 0.3s ease-out;
   }
   
-  /* Dog walking animation */
   .dog.walking {
     animation: dog-walk 0.5s infinite;
   }
@@ -103,7 +100,6 @@
     }
   }
   
-  /* Dog direction flipping */
   .dog.walking[style*="scaleX(-1)"] {
     animation: dog-walk-flipped 0.5s infinite;
   }
@@ -126,7 +122,6 @@
     }
   }
   
-  /* Walking animation for player */
   .player.walking {
     animation: player-walk 0.5s infinite;
   }
@@ -149,7 +144,6 @@
     }
   }
   
-  /* Keep the direction flipping working with the walking animation */
   .player.walking[style*="scaleX(-1)"] {
     animation: player-walk-flipped 0.5s infinite;
   }
@@ -172,12 +166,10 @@
     }
   }
   
-  /* Powerup effects on player */
   .player.invincible {
     animation: muscle-pulse 0.8s infinite alternate;
   }
   
-  /* Ensure invincible effect works with walking animation */
   .player.invincible.walking {
     animation: player-walk 0.5s infinite;
   }
@@ -186,7 +178,6 @@
     animation: player-walk-flipped 0.5s infinite;
   }
   
-  /* New pulse animation for MuscleMartin */
   @keyframes muscle-pulse {
     0% { 
       transform: scale(1);
@@ -217,7 +208,6 @@
     z-index: 5;
   }
   
-  /* Styles for powerups */
   .powerup {
     position: absolute;
     width: 30px;
@@ -240,7 +230,6 @@
     background-color: hsl(var(--powerup-doublePoints));
   }
   
-  /* Animations */
   @keyframes pulse {
     0% { opacity: 0.7; }
     100% { opacity: 1; }
@@ -281,7 +270,6 @@
     display: none;
   }
   
-  /* Mobile controls */
   .mobile-controls {
     position: absolute;
     bottom: 20px;

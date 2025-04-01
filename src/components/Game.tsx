@@ -23,7 +23,7 @@ interface ObstacleObject extends GameObject {
 
 interface PowerUpObject extends GameObject {
   type: 'powerup';
-  powerType: 'invincibility' | 'extraLife' | 'doublePoints';
+  powerType: 'invincibility';
 }
 
 type FallingObject = CoinObject | ObstacleObject | PowerUpObject;
@@ -278,15 +278,7 @@ const Game: React.FC = () => {
     const levelSettings = GAME_LEVELS[currentLevel as keyof typeof GAME_LEVELS];
     const speed = levelSettings.speed * 0.8;
 
-    const powerTypes: Array<PowerUpObject['powerType']> = [];
-    
-    if (Math.random() < 0.1) {
-      powerTypes.push('extraLife');
-    } else {
-      powerTypes.push(Math.random() < 0.5 ? 'invincibility' : 'doublePoints');
-    }
-    
-    const powerType = powerTypes[0];
+    const powerType = 'invincibility';
 
     const newPowerUp: PowerUpObject = {
       id,
@@ -392,59 +384,26 @@ const Game: React.FC = () => {
   };
 
   const handlePowerUp = (powerType: PowerUpObject['powerType']) => {
-    switch (powerType) {
-      case 'invincibility':
-        setIsInvincible(true);
-        setIsMuscleMartin(true);
+    if (powerType === 'invincibility') {
+      setIsInvincible(true);
+      setIsMuscleMartin(true);
+      toast({
+        title: "MUSCLE POWER!",
+        description: "Martin transforms into MuscleMartin! Invincible for 5 seconds!",
+      });
+      
+      if (invincibilityTimeoutRef.current) {
+        clearTimeout(invincibilityTimeoutRef.current);
+      }
+      
+      invincibilityTimeoutRef.current = window.setTimeout(() => {
+        setIsInvincible(false);
+        setIsMuscleMartin(false);
         toast({
-          title: "MUSCLE POWER!",
-          description: "Martin transforms into MuscleMartin! Invincible for 5 seconds!",
+          title: "Invincibility ended!",
+          description: "Be careful now!",
         });
-        
-        if (invincibilityTimeoutRef.current) {
-          clearTimeout(invincibilityTimeoutRef.current);
-        }
-        
-        invincibilityTimeoutRef.current = window.setTimeout(() => {
-          setIsInvincible(false);
-          setIsMuscleMartin(false);
-          toast({
-            title: "Invincibility ended!",
-            description: "Be careful now!",
-          });
-        }, 5000);
-        break;
-        
-      case 'extraLife':
-        setLives(l => {
-          const newLives = Math.min(5, l + 1);
-          toast({
-            title: "Extra Life!",
-            description: `You now have ${newLives} lives!`,
-          });
-          return newLives;
-        });
-        break;
-        
-      case 'doublePoints':
-        setHasDoublePoints(true);
-        toast({
-          title: "Double Points!",
-          description: "Points are doubled for 8 seconds!",
-        });
-        
-        if (doublePointsTimeoutRef.current) {
-          clearTimeout(doublePointsTimeoutRef.current);
-        }
-        
-        doublePointsTimeoutRef.current = window.setTimeout(() => {
-          setHasDoublePoints(false);
-          toast({
-            title: "Double Points ended!",
-            description: "Back to normal points.",
-          });
-        }, 8000);
-        break;
+      }, 5000);
     }
   };
 
@@ -559,7 +518,7 @@ const Game: React.FC = () => {
           backgroundPosition: 'center',
           transform: playerDirection === 'left' ? 'scaleX(-1)' : 'scaleX(1)',
           transition: 'transform 0.2s ease-out',
-          width: '72px',
+          width: isMuscleMartin ? '108px' : '72px',
           height: '72px'
         }}
       ></div>
