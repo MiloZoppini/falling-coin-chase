@@ -4,7 +4,6 @@ import { Coins, Star, Trophy, Medal } from 'lucide-react';
 import { useIsMobile } from "@/hooks/use-mobile";
 import PlayerNameModal from './PlayerNameModal';
 import { getHighScores, saveHighScore, HighScore } from '@/services/supabaseService';
-import { Progress } from "@/components/ui/progress";
 import {
   Table,
   TableBody,
@@ -38,12 +37,16 @@ interface PowerUpObject extends GameObject {
   powerType: 'invincibility';
 }
 
-type FallingObject = CoinObject | ObstacleObject | PowerUpObject;
+interface HeartObject extends GameObject {
+  type: 'heart';
+}
+
+type FallingObject = CoinObject | ObstacleObject | PowerUpObject | HeartObject;
 
 const GAME_LEVELS = {
-  1: { speed: 0.2, spawnRate: 0.02, obstacleRate: 0.3, powerUpChance: 0.02 },
-  2: { speed: 0.3, spawnRate: 0.03, obstacleRate: 0.4, powerUpChance: 0.015 },
-  3: { speed: 0.4, spawnRate: 0.04, obstacleRate: 0.5, powerUpChance: 0.01 }
+  1: { speed: 0.2, spawnRate: 0.02, obstacleRate: 0.3, powerUpChance: 0.02, heartChance: 0.01 },
+  2: { speed: 0.3, spawnRate: 0.03, obstacleRate: 0.4, powerUpChance: 0.015, heartChance: 0.008 },
+  3: { speed: 0.4, spawnRate: 0.04, obstacleRate: 0.5, powerUpChance: 0.01, heartChance: 0.006 }
 };
 
 const COIN_TYPES = {
@@ -89,6 +92,7 @@ const Game: React.FC = () => {
   const invincibilityTimeoutRef = useRef<number | null>(null);
   const doublePointsTimeoutRef = useRef<number | null>(null);
   const lastPowerUpTime = useRef<number>(0);
+  const lastHeartSpawnTime = useRef<number>(0);
 
   const [isMuscleMartin, setIsMuscleMartin] = useState<boolean>(false);
   const [isHurt, setIsHurt] = useState<boolean>(false);
@@ -224,6 +228,12 @@ const Game: React.FC = () => {
         createPowerUp();
         lastPowerUpTime.current = now;
       }
+      
+      const timeSinceLastHeart = now - lastHeartSpawnTime.current;
+      if (timeSinceLastHeart > 20000 && Math.random() < levelSettings.heartChance * deltaTime * 0.01) {
+        createHeart();
+        lastHeartSpawnTime.current = now;
+      }
 
       updateFallingObjects(deltaTime);
       checkCollisions();
@@ -236,7 +246,7 @@ const Game: React.FC = () => {
       // Update invincibility time left
       if (isInvincible) {
         setInvincibilityTimeLeft(prev => {
-          const newValue = Math.max(0, prev - deltaTime / 5000 * 100);
+          const newValue = Math.max(0, prev - deltaTime / 1000);
           return newValue;
         });
       }
@@ -390,6 +400,29 @@ const Game: React.FC = () => {
     setFallingObjects(prev => [...prev, newPowerUp]);
   };
 
+  const createHeart = () => {
+    if (!gameWidth) return;
+    
+    const id = Date.now() + Math.random();
+    const width = 30;
+    const height = 30;
+    const x = Math.random() * (gameWidth - width);
+    const levelSettings = GAME_LEVELS[currentLevel as keyof typeof GAME_LEVELS];
+    const speed = levelSettings.speed * 0.7;
+
+    const newHeart: HeartObject = {
+      id,
+      x,
+      y: -30,
+      width,
+      height,
+      speed,
+      type: 'heart'
+    };
+    
+    setFallingObjects(prev => [...prev, newHeart]);
+  };
+
   const updateFallingObjects = (deltaTime: number) => {
     setFallingObjects(prev => 
       prev
@@ -426,6 +459,7 @@ const Game: React.FC = () => {
       let lostLife = false;
       let powerupCollected = false;
       let powerupType: PowerUpObject['powerType'] | null = null;
+      let heartCollected = false;
 
       for (const obj of prev) {
         const objectRect = {
@@ -452,6 +486,8 @@ const Game: React.FC = () => {
           } else if (obj.type === 'powerup') {
             powerupCollected = true;
             powerupType = obj.powerType;
+          } else if (obj.type === 'heart') {
+            heartCollected = true;
           }
         } else {
           remaining.push(obj);
@@ -497,6 +533,10 @@ const Game: React.FC = () => {
         });
       }
       
+      if (heartCollected) {
+        setLives(l => Math.min(l + 1, 5)); // Maximum 5 lives
+      }
+      
       if (powerupCollected && powerupType) {
         handlePowerUp(powerupType);
       }
@@ -509,7 +549,7 @@ const Game: React.FC = () => {
     if (powerType === 'invincibility') {
       setIsInvincible(true);
       setIsMuscleMartin(true);
-      setInvincibilityTimeLeft(100); // Start at 100% full
+      setInvincibilityTimeLeft(5); // Start with 5 seconds countdown
       
       if (gameContainerRef.current) {
         gameContainerRef.current.classList.add('earthquake');
@@ -612,7 +652,6 @@ const Game: React.FC = () => {
     setIsHurt(false);
     setIsEjecting(false);
     setSavedScore(false);
-    setInvincibilityTimeLeft(0);
     lastPowerUpTime.current = 0;
     
     const gameOverElement = document.querySelector('.game-over');
@@ -722,7 +761,9 @@ const Game: React.FC = () => {
                   ? `coin coin-${(obj as CoinObject).coinType}` 
                   : obj.type === 'obstacle' 
                     ? 'obstacle' 
-                    : `powerup powerup-${obj.powerType}`
+                    : obj.type === 'heart'
+                      ? 'heart'
+                      : `powerup powerup-${obj.powerType}`
               }
               style={{
                 left: `${obj.x}px`,
@@ -734,7 +775,9 @@ const Game: React.FC = () => {
                   ? `url('${COIN_TYPES[(obj as CoinObject).coinType].imagePath}')` 
                   : obj.type === 'powerup' 
                     ? `url('/images/lemon.webp')` 
-                    : `url('/images/nuke.png')`,
+                    : obj.type === 'heart'
+                      ? `url('/images/heart.png')`
+                      : `url('/images/nuke.png')`,
                 backgroundSize: 'contain',
                 backgroundPosition: 'center',
                 backgroundRepeat: 'no-repeat',
@@ -766,9 +809,8 @@ const Game: React.FC = () => {
               <div className="mt-2 w-full">
                 <div className="flex items-center text-yellow-400 mb-1">
                   <Star size={16} className="mr-1" />
-                  <span>Invincible</span>
+                  <span>Invincible: {Math.ceil(invincibilityTimeLeft)}s</span>
                 </div>
-                <Progress value={invincibilityTimeLeft} className="h-2 w-full bg-gray-700" />
               </div>
             )}
             
