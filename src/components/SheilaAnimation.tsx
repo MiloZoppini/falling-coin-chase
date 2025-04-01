@@ -12,27 +12,35 @@ const SheilaAnimation: React.FC<SheilaAnimationProps> = ({
   gameHeight, 
   onAnimationComplete 
 }) => {
-  // Setting both Sheila and hammer to start at the same height, at player level
+  // Setting Sheila and hammer at the bottom of the screen (same level as Martin)
+  const floorLevel = gameHeight - 180; // Position near the bottom where Martin walks
+  
   const [position, setPosition] = useState<{ x: number; y: number }>({ 
-    x: 0, // Start from the very left edge (visible)
-    y: gameHeight / 2 - 40 // Centered vertically in game area
+    x: -100, // Start off-screen to the left
+    y: floorLevel // At floor level
   });
   const [hammerPosition, setHammerPosition] = useState<{ x: number; y: number }>({ 
-    x: -70, // Position hammer a bit behind Sheila
-    y: gameHeight / 2 - 40 // Same height as Sheila
+    x: -170, // Position hammer a bit behind Sheila
+    y: floorLevel // Same height as Sheila
   });
   const [opacity, setOpacity] = useState(1);
   const [isAnimating, setIsAnimating] = useState(true);
+  const [walkFrame, setWalkFrame] = useState(0); // For walking animation
 
   useEffect(() => {
     if (!isAnimating) return;
 
     // Console log to debug
-    console.log("Starting Sheila animation", { gameWidth, gameHeight });
+    console.log("Starting Sheila animation", { gameWidth, gameHeight, floorLevel });
 
-    const animationDuration = 3000; // 3 seconds
+    const animationDuration = 4000; // 4 seconds to cross the screen
     const fadeOutDuration = 500; // 0.5 seconds
     const startTime = Date.now();
+    
+    // For walking animation
+    const walkInterval = setInterval(() => {
+      setWalkFrame(prev => (prev + 1) % 2); // Toggle between 0 and 1
+    }, 200); // Change frame every 200ms
     
     const animate = () => {
       const elapsed = Date.now() - startTime;
@@ -41,11 +49,11 @@ const SheilaAnimation: React.FC<SheilaAnimationProps> = ({
       // Calculate positions based on animation progress
       if (progress < 0.85) {
         // Move from left to right
-        const newX = 0 + (gameWidth + 100) * progress;
-        const hammerX = -70 + (gameWidth + 100) * progress;
+        const newX = -100 + (gameWidth + 200) * progress;
+        const hammerX = -170 + (gameWidth + 200) * progress;
         
-        setPosition({ x: newX, y: gameHeight / 2 - 40 });
-        setHammerPosition({ x: hammerX, y: gameHeight / 2 - 40 });
+        setPosition({ x: newX, y: floorLevel + (walkFrame * 4) }); // Add slight up/down motion
+        setHammerPosition({ x: hammerX, y: floorLevel + (walkFrame * 4) });
         setOpacity(1);
         
         // Debug log during animation
@@ -54,7 +62,8 @@ const SheilaAnimation: React.FC<SheilaAnimationProps> = ({
             progress, 
             newX, 
             hammerX, 
-            gameWidth 
+            gameWidth,
+            walkFrame
           });
         }
       } else {
@@ -67,6 +76,7 @@ const SheilaAnimation: React.FC<SheilaAnimationProps> = ({
         requestAnimationFrame(animate);
       } else {
         setIsAnimating(false);
+        clearInterval(walkInterval);
         onAnimationComplete();
         console.log("Sheila animation completed");
       }
@@ -76,8 +86,9 @@ const SheilaAnimation: React.FC<SheilaAnimationProps> = ({
     
     return () => {
       cancelAnimationFrame(animationId);
+      clearInterval(walkInterval);
     };
-  }, [gameWidth, gameHeight, isAnimating, onAnimationComplete]);
+  }, [gameWidth, gameHeight, isAnimating, onAnimationComplete, floorLevel]);
 
   if (!isAnimating && opacity <= 0) return null;
 
@@ -89,32 +100,43 @@ const SheilaAnimation: React.FC<SheilaAnimationProps> = ({
           position: 'absolute',
           left: `${hammerPosition.x}px`,
           top: `${hammerPosition.y}px`,
-          width: '80px',
-          height: '80px',
+          width: '70px',
+          height: '70px',
           backgroundImage: `url('/images/martello.png')`,
           backgroundSize: 'contain',
           backgroundRepeat: 'no-repeat',
           backgroundPosition: 'center',
           opacity,
-          zIndex: 100 // Much higher zIndex to ensure it appears in front
+          zIndex: 100, // Much higher zIndex to ensure it appears in front
+          transform: 'rotate(10deg)' // Slightly rotate the hammer for a dynamic look
         }}
       />
       <div
-        className="sheila-animation"
+        className={`sheila-animation ${walkFrame === 1 ? 'walk-frame' : ''}`}
         style={{
           position: 'absolute',
           left: `${position.x}px`,
           top: `${position.y}px`,
-          width: '100px',
+          width: '80px',
           height: '100px',
           backgroundImage: `url('/images/Sheila.png')`,
           backgroundSize: 'contain',
           backgroundRepeat: 'no-repeat',
           backgroundPosition: 'center',
           opacity,
-          zIndex: 100 // Much higher zIndex to ensure it appears in front
+          zIndex: 100, // Much higher zIndex to ensure it appears in front
+          animation: walkFrame === 1 ? 'sheila-step 0.2s ease-in-out' : 'none'
         }}
       />
+
+      {/* Add dynamic CSS for walking animation */}
+      <style jsx="true">{`
+        @keyframes sheila-step {
+          0% { transform: translateY(0px); }
+          50% { transform: translateY(-3px); }
+          100% { transform: translateY(0px); }
+        }
+      `}</style>
     </>
   );
 };
