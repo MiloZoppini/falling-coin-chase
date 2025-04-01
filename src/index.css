@@ -42,11 +42,12 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-pixel;
     margin: 0;
     padding: 0;
     overflow: hidden;
     touch-action: manipulation;
+    font-family: 'Pixelify Sans', cursive;
   }
 
   .game-container {

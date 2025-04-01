@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
-import { Coins, Heart, Star } from 'lucide-react';
-import { useToast } from "@/components/ui/use-toast";
+import { Coins, Heart, Star, Trophy } from 'lucide-react';
+import { useToast } from "@/hooks/use-toast";
+import PlayerNameModal from './PlayerNameModal';
+import { getHighScores, saveHighScore, HighScore } from '@/services/supabaseService';
 
 // Game objects interfaces
 interface GameObject {
@@ -76,6 +78,20 @@ const Game: React.FC = () => {
   const [isHurt, setIsHurt] = useState<boolean>(false);
   const hurtTimeoutRef = useRef<number | null>(null);
 
+  const [playerName, setPlayerName] = useState<string>('');
+  const [showNameModal, setShowNameModal] = useState<boolean>(true);
+  const [highScores, setHighScores] = useState<HighScore[]>([]);
+  const [savedScore, setSavedScore] = useState<boolean>(false);
+
+  useEffect(() => {
+    const loadHighScores = async () => {
+      const scores = await getHighScores();
+      setHighScores(scores);
+    };
+    
+    loadHighScores();
+  }, []);
+
   useEffect(() => {
     const handleResize = () => {
       if (gameContainerRef.current) {
@@ -96,11 +112,6 @@ const Game: React.FC = () => {
     handleResize();
     window.addEventListener('resize', handleResize);
 
-    toast({
-      title: "Game Started!",
-      description: "Catch the coins and avoid the obstacles!",
-    });
-
     return () => {
       window.removeEventListener('resize', handleResize);
       if (gameLoopRef.current) {
@@ -113,7 +124,21 @@ const Game: React.FC = () => {
         clearTimeout(doublePointsTimeoutRef.current);
       }
     };
-  }, [toast]);
+  }, []);
+
+  useEffect(() => {
+    if (isGameOver && !savedScore && playerName) {
+      const saveScore = async () => {
+        await saveHighScore(playerName, score);
+        setSavedScore(true);
+        
+        const scores = await getHighScores();
+        setHighScores(scores);
+      };
+      
+      saveScore();
+    }
+  }, [isGameOver, savedScore, playerName, score]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -518,6 +543,7 @@ const Game: React.FC = () => {
     setHasDoublePoints(false);
     setIsHurt(false);
     setIsEjecting(false);
+    setSavedScore(false);
     lastPowerUpTime.current = 0;
     
     const gameOverElement = document.querySelector('.game-over');
@@ -543,10 +569,20 @@ const Game: React.FC = () => {
     });
   };
 
+  const handleNameSubmit = (name: string) => {
+    setPlayerName(name);
+    setShowNameModal(false);
+    
+    toast({
+      title: "Game Started!",
+      description: `Good luck, ${name}! Catch the coins and avoid the obstacles!`,
+    });
+  };
+
   return (
     <div 
       ref={gameContainerRef} 
-      className="game-container"
+      className="game-container font-pixel"
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
@@ -557,6 +593,10 @@ const Game: React.FC = () => {
         backgroundRepeat: 'no-repeat'
       }}
     >
+      {showNameModal && (
+        <PlayerNameModal onSubmit={handleNameSubmit} highScores={highScores} />
+      )}
+      
       <div 
         ref={playerRef} 
         className={`player ${isInvincible ? 'invincible' : ''} ${hasDoublePoints ? 'double-points' : ''} ${isWalking ? 'walking' : ''} ${isHurt ? 'hurt' : ''} ${isEjecting ? 'ejecting' : ''}`}
@@ -647,6 +687,9 @@ const Game: React.FC = () => {
             </div>
           )}
         </div>
+        <div className="player-name mt-2">
+          <span>{playerName}</span>
+        </div>
       </div>
       
       <div className="mobile-controls">
@@ -674,7 +717,36 @@ const Game: React.FC = () => {
       
       <div className={`game-over ${isGameOver ? '' : 'hidden'}`}>
         <h2 className="text-3xl font-bold mb-4">Game Over!</h2>
+        <p className="text-xl mb-2">Player: {playerName}</p>
         <p className="text-xl mb-6">Final Score: {score}</p>
+        
+        {highScores.length > 0 && (
+          <div className="mb-6">
+            <div className="flex items-center gap-2 mb-3 justify-center">
+              <Trophy size={20} />
+              <h3 className="text-xl font-bold">High Scores</h3>
+            </div>
+            <div className="max-h-40 overflow-y-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left py-2">Player</th>
+                    <th className="text-right py-2">Score</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {highScores.slice(0, 5).map((entry, index) => (
+                    <tr key={index} className="border-b border-gray-700">
+                      <td className="py-2">{entry.playerName}</td>
+                      <td className="text-right py-2">{entry.score}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+        
         <Button onClick={resetGame} className="px-6 py-2 bg-blue-600 hover:bg-blue-700">
           Play Again
         </Button>
