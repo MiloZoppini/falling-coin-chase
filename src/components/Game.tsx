@@ -207,9 +207,9 @@ const Game: React.FC = () => {
       let dogX = targetPosition.x;
       
       if (targetPosition.direction === 'right') {
-        dogX = dogX - 30;
+        dogX = dogX - 60;
       } else {
-        dogX = dogX + 30;
+        dogX = dogX + 60;
       }
       
       setDogPosition({
