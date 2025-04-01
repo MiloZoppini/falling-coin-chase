@@ -1,4 +1,3 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -63,24 +62,22 @@
 
   .player {
     position: absolute;
-    width: 40px;
-    height: 40px;
-    background-color: hsl(var(--player-color));
-    border-radius: 50%;
+    width: 64px;
+    height: 64px;
     bottom: 100px;
     left: 50%;
     transform: translateX(-50%);
     z-index: 10;
   }
   
-  /* Powerup effects sul giocatore */
+  /* Powerup effects on player */
   .player.invincible {
     box-shadow: 0 0 15px 5px hsl(var(--powerup-invincibility));
     animation: pulse 1s infinite alternate;
   }
   
   .player.double-points {
-    border: 3px solid hsl(var(--powerup-doublePoints));
+    box-shadow: 0 0 10px 3px hsl(var(--powerup-doublePoints));
   }
 
   .coin {

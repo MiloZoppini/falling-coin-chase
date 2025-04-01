@@ -65,6 +65,7 @@ const Game: React.FC = () => {
   const invincibilityTimeoutRef = useRef<number | null>(null);
   const doublePointsTimeoutRef = useRef<number | null>(null);
   const lastPowerUpTime = useRef<number>(0);
+  const playerDirection = useRef<'left' | 'right'>('right');
 
   useEffect(() => {
     const handleResize = () => {
@@ -190,15 +191,24 @@ const Game: React.FC = () => {
   }, [isGameOver, isPaused, gameWidth, gameHeight, score, currentLevel, toast]);
 
   const movePlayer = () => {
+    if (!playerRef.current) return;
+    
     setPlayerPosition(prev => {
-      const playerWidth = playerRef.current?.offsetWidth || 40;
+      const playerWidth = playerRef.current?.offsetWidth || 64; // Set to width of character sprite
       let newX = prev.x;
 
       if (keysPressed.current.left && newX > 0) {
         newX = Math.max(0, newX - playerSpeed);
+        playerDirection.current = 'left';
       }
       if (keysPressed.current.right && newX < gameWidth - playerWidth) {
         newX = Math.min(gameWidth - playerWidth, newX + playerSpeed);
+        playerDirection.current = 'right';
+      }
+
+      // Update player sprite direction
+      if (playerRef.current) {
+        playerRef.current.style.transform = playerDirection.current === 'left' ? 'scaleX(-1)' : 'scaleX(1)';
       }
 
       return { ...prev, x: newX };
@@ -424,8 +434,18 @@ const Game: React.FC = () => {
     touchStartXRef.current = touchX;
     
     setPlayerPosition(prev => {
-      const playerWidth = playerRef.current?.offsetWidth || 40;
+      const playerWidth = playerRef.current?.offsetWidth || 64;
       const newX = Math.max(0, Math.min(gameWidth - playerWidth, prev.x + diffX));
+      
+      // Update player direction based on movement
+      if (diffX < 0) {
+        playerDirection.current = 'left';
+        if (playerRef.current) playerRef.current.style.transform = 'scaleX(-1)';
+      } else if (diffX > 0) {
+        playerDirection.current = 'right';
+        if (playerRef.current) playerRef.current.style.transform = 'scaleX(1)';
+      }
+      
       return { ...prev, x: newX };
     });
   };
@@ -487,7 +507,12 @@ const Game: React.FC = () => {
         className={`player ${isInvincible ? 'invincible' : ''} ${hasDoublePoints ? 'double-points' : ''}`}
         style={{ 
           left: `${playerPosition.x}px`,
-          bottom: `100px`
+          bottom: `100px`,
+          backgroundImage: `url('/lovable-uploads/27f7581b-1726-4a1a-a66e-f4c0190d4bc5.png')`,
+          backgroundSize: 'contain',
+          backgroundRepeat: 'no-repeat',
+          width: '64px',  // Set to match your character sprite width
+          height: '64px'  // Set to match your character sprite height
         }}
       ></div>
       
