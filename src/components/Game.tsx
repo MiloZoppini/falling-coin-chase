@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Coins, Heart, Star, Trophy, Medal } from 'lucide-react';
@@ -507,7 +506,7 @@ const Game: React.FC = () => {
     if (powerType === 'invincibility') {
       setIsInvincible(true);
       setIsMuscleMartin(true);
-      setInvincibilityTimeLeft(100); // 100% of the bar
+      setInvincibilityTimeLeft(100); // Start at 100% full
       
       if (gameContainerRef.current) {
         gameContainerRef.current.classList.add('earthquake');
