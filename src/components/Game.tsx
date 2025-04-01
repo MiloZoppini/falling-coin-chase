@@ -51,6 +51,7 @@ const Game: React.FC = () => {
   const [fallingObjects, setFallingObjects] = useState<FallingObject[]>([]);
   const [isPaused, setIsPaused] = useState<boolean>(false);
   const [playerDirection, setPlayerDirection] = useState<'left' | 'right'>('right');
+  const [isWalking, setIsWalking] = useState<boolean>(false);
   
   const keysPressed = useRef<{left: boolean, right: boolean}>({
     left: false,
@@ -111,18 +112,22 @@ const Game: React.FC = () => {
       
       if (e.key === 'ArrowLeft' || e.key === 'a') {
         keysPressed.current.left = true;
+        setIsWalking(true);
       }
       if (e.key === 'ArrowRight' || e.key === 'd') {
         keysPressed.current.right = true;
+        setIsWalking(true);
       }
     };
 
     const handleKeyUp = (e: KeyboardEvent) => {
       if (e.key === 'ArrowLeft' || e.key === 'a') {
         keysPressed.current.left = false;
+        if (!keysPressed.current.right) setIsWalking(false);
       }
       if (e.key === 'ArrowRight' || e.key === 'd') {
         keysPressed.current.right = false;
+        if (!keysPressed.current.left) setIsWalking(false);
       }
     };
 
@@ -190,16 +195,20 @@ const Game: React.FC = () => {
     setPlayerPosition(prev => {
       const playerWidth = playerRef.current?.offsetWidth || 40;
       let newX = prev.x;
+      let isMoving = false;
 
       if (keysPressed.current.left && newX > 0) {
         newX = Math.max(0, newX - playerSpeed);
         setPlayerDirection('left');
+        isMoving = true;
       }
       if (keysPressed.current.right && newX < gameWidth - playerWidth) {
         newX = Math.min(gameWidth - playerWidth, newX + playerSpeed);
         setPlayerDirection('right');
+        isMoving = true;
       }
 
+      setIsWalking(isMoving);
       return { ...prev, x: newX };
     });
   };
@@ -408,6 +417,7 @@ const Game: React.FC = () => {
   const handleTouchStart = (e: React.TouchEvent) => {
     if (isGameOver) return;
     touchStartXRef.current = e.touches[0].clientX;
+    setIsWalking(false);
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
@@ -427,34 +437,40 @@ const Game: React.FC = () => {
         setPlayerDirection('right');
       }
       
+      setIsWalking(Math.abs(diffX) > 1);
       return { ...prev, x: newX };
     });
   };
 
   const handleTouchEnd = () => {
     touchStartXRef.current = null;
+    setIsWalking(false);
   };
 
   const startMovingLeft = () => {
     if (!isGameOver) {
       keysPressed.current.left = true;
       setPlayerDirection('left');
+      setIsWalking(true);
     }
   };
 
   const stopMovingLeft = () => {
     keysPressed.current.left = false;
+    if (!keysPressed.current.right) setIsWalking(false);
   };
 
   const startMovingRight = () => {
     if (!isGameOver) {
       keysPressed.current.right = true;
       setPlayerDirection('right');
+      setIsWalking(true);
     }
   };
 
   const stopMovingRight = () => {
     keysPressed.current.right = false;
+    if (!keysPressed.current.left) setIsWalking(false);
   };
 
   const resetGame = () => {
@@ -497,7 +513,7 @@ const Game: React.FC = () => {
     >
       <div 
         ref={playerRef} 
-        className={`player ${isInvincible ? 'invincible' : ''} ${hasDoublePoints ? 'double-points' : ''}`}
+        className={`player ${isInvincible ? 'invincible' : ''} ${hasDoublePoints ? 'double-points' : ''} ${isWalking ? 'walking' : ''}`}
         style={{ 
           left: `${playerPosition.x}px`,
           bottom: `100px`,
