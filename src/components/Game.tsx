@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Coins, Heart, Star, Trophy, Medal } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
+import { useIsMobile } from "@/hooks/use-mobile";
 import PlayerNameModal from './PlayerNameModal';
 import { getHighScores, saveHighScore, HighScore } from '@/services/supabaseService';
 import {
@@ -47,6 +48,7 @@ const GAME_LEVELS = {
 
 const Game: React.FC = () => {
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   const gameContainerRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<HTMLDivElement>(null);
   const dogRef = useRef<HTMLDivElement>(null);
@@ -173,14 +175,16 @@ const Game: React.FC = () => {
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('keyup', handleKeyUp);
+    if (!isMobile) {
+      window.addEventListener('keydown', handleKeyDown);
+      window.addEventListener('keyup', handleKeyUp);
+    }
 
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [isGameOver, isEjecting]);
+  }, [isGameOver, isEjecting, isMobile]);
 
   useEffect(() => {
     if (isGameOver || isPaused || isEjecting) return;
@@ -484,34 +488,45 @@ const Game: React.FC = () => {
 
   const handleTouchStart = (e: React.TouchEvent) => {
     if (isGameOver || isEjecting) return;
-    touchStartXRef.current = e.touches[0].clientX;
-    setIsWalking(false);
+    
+    const touchX = e.touches[0].clientX;
+    const centerX = window.innerWidth / 2;
+    
+    keysPressed.current.left = false;
+    keysPressed.current.right = false;
+    
+    if (touchX < centerX) {
+      keysPressed.current.left = true;
+      setPlayerDirection('left');
+    } else {
+      keysPressed.current.right = true;
+      setPlayerDirection('right');
+    }
+    
+    setIsWalking(true);
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    if (isGameOver || isEjecting || touchStartXRef.current === null || !playerRef.current) return;
+    if (isGameOver || isEjecting) return;
     
     const touchX = e.touches[0].clientX;
-    const diffX = touchX - touchStartXRef.current;
-    touchStartXRef.current = touchX;
+    const centerX = window.innerWidth / 2;
     
-    setPlayerPosition(prev => {
-      const playerWidth = playerRef.current?.offsetWidth || 40;
-      const newX = Math.max(0, Math.min(gameWidth - playerWidth, prev.x + diffX));
-      
-      if (diffX < 0) {
-        setPlayerDirection('left');
-      } else if (diffX > 0) {
-        setPlayerDirection('right');
-      }
-      
-      setIsWalking(Math.abs(diffX) > 1);
-      return { ...prev, x: newX };
-    });
+    keysPressed.current.left = false;
+    keysPressed.current.right = false;
+    
+    if (touchX < centerX) {
+      keysPressed.current.left = true;
+      setPlayerDirection('left');
+    } else {
+      keysPressed.current.right = true;
+      setPlayerDirection('right');
+    }
   };
 
   const handleTouchEnd = () => {
-    touchStartXRef.current = null;
+    keysPressed.current.left = false;
+    keysPressed.current.right = false;
     setIsWalking(false);
   };
 
@@ -709,28 +724,59 @@ const Game: React.FC = () => {
         </div>
       </div>
       
-      <div className="mobile-controls">
-        <button 
-          className="control-button left-button"
-          onTouchStart={startMovingLeft}
-          onTouchEnd={stopMovingLeft}
-          onMouseDown={startMovingLeft}
-          onMouseUp={stopMovingLeft}
-          onMouseLeave={stopMovingLeft}
-        >
-          &larr;
-        </button>
-        <button 
-          className="control-button right-button"
-          onTouchStart={startMovingRight}
-          onTouchEnd={stopMovingRight}
-          onMouseDown={startMovingRight}
-          onMouseUp={stopMovingRight}
-          onMouseLeave={stopMovingRight}
-        >
-          &rarr;
-        </button>
-      </div>
+      {!isMobile && (
+        <div className="mobile-controls">
+          <button 
+            className="control-button left-button"
+            onTouchStart={startMovingLeft}
+            onTouchEnd={stopMovingLeft}
+            onMouseDown={startMovingLeft}
+            onMouseUp={stopMovingLeft}
+            onMouseLeave={stopMovingLeft}
+          >
+            &larr;
+          </button>
+          <button 
+            className="control-button right-button"
+            onTouchStart={startMovingRight}
+            onTouchEnd={stopMovingRight}
+            onMouseDown={startMovingRight}
+            onMouseUp={stopMovingRight}
+            onMouseLeave={stopMovingRight}
+          >
+            &rarr;
+          </button>
+        </div>
+      )}
+      
+      {isMobile && (
+        <div className="touch-controls">
+          <div 
+            className="touch-area left-area"
+            style={{
+              position: 'absolute',
+              left: 0,
+              bottom: 0,
+              width: '50%',
+              height: '100%',
+              zIndex: 5,
+              opacity: 0
+            }}
+          />
+          <div 
+            className="touch-area right-area"
+            style={{
+              position: 'absolute',
+              right: 0,
+              bottom: 0,
+              width: '50%',
+              height: '100%',
+              zIndex: 5,
+              opacity: 0
+            }}
+          />
+        </div>
+      )}
       
       <div className={`game-over ${isGameOver ? '' : 'hidden'}`}>
         <h2 className="text-3xl font-bold mb-4">Game Over!</h2>
