@@ -487,7 +487,7 @@ const Game: React.FC = () => {
         style={{ 
           left: `${playerPosition.x}px`,
           bottom: `100px`,
-          backgroundImage: `url(/images/martin.png)`,
+          backgroundImage: `url('/images/martin.png')`,
           backgroundSize: 'contain',
           backgroundRepeat: 'no-repeat',
           backgroundPosition: 'center'
