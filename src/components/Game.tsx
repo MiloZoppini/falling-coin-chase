@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
-import { Coins, Heart } from 'lucide-react';
+import { Coins, Heart, Star } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
 
 // Game objects interfaces
@@ -22,7 +22,19 @@ interface ObstacleObject extends GameObject {
   type: 'obstacle';
 }
 
-type FallingObject = CoinObject | ObstacleObject;
+interface PowerUpObject extends GameObject {
+  type: 'powerup';
+  powerType: 'invincibility' | 'extraLife' | 'doublePoints';
+}
+
+type FallingObject = CoinObject | ObstacleObject | PowerUpObject;
+
+// Livelli di gioco
+const GAME_LEVELS = {
+  1: { speed: 0.2, spawnRate: 0.02, obstacleRate: 0.3, powerUpChance: 0.05 },
+  2: { speed: 0.3, spawnRate: 0.03, obstacleRate: 0.35, powerUpChance: 0.1 },
+  3: { speed: 0.4, spawnRate: 0.04, obstacleRate: 0.4, powerUpChance: 0.15 }
+};
 
 const Game: React.FC = () => {
   const { toast } = useToast();
@@ -38,13 +50,19 @@ const Game: React.FC = () => {
   const [isGameOver, setIsGameOver] = useState<boolean>(false);
   const [playerPosition, setPlayerPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [fallingObjects, setFallingObjects] = useState<FallingObject[]>([]);
-  const [difficulty, setDifficulty] = useState<number>(1);
   const [isPaused, setIsPaused] = useState<boolean>(false);
   
   // Movimento del giocatore
   const [isMovingLeft, setIsMovingLeft] = useState<boolean>(false);
   const [isMovingRight, setIsMovingRight] = useState<boolean>(false);
   const playerSpeed = 8; // Velocità di movimento del giocatore
+  
+  // Livelli e powerup
+  const [currentLevel, setCurrentLevel] = useState<number>(1);
+  const [isInvincible, setIsInvincible] = useState<boolean>(false);
+  const [hasDoublePoints, setHasDoublePoints] = useState<boolean>(false);
+  const invincibilityTimeoutRef = useRef<number | null>(null);
+  const doublePointsTimeoutRef = useRef<number | null>(null);
 
   // Initial setup
   useEffect(() => {
@@ -78,6 +96,12 @@ const Game: React.FC = () => {
       window.removeEventListener('resize', handleResize);
       if (gameLoopRef.current) {
         cancelAnimationFrame(gameLoopRef.current);
+      }
+      if (invincibilityTimeoutRef.current) {
+        clearTimeout(invincibilityTimeoutRef.current);
+      }
+      if (doublePointsTimeoutRef.current) {
+        clearTimeout(doublePointsTimeoutRef.current);
       }
     };
   }, [toast]);
@@ -156,9 +180,17 @@ const Game: React.FC = () => {
         return;
       }
 
+      // Get current level settings
+      const levelSettings = GAME_LEVELS[currentLevel as keyof typeof GAME_LEVELS];
+      
       // Create new objects based on difficulty
-      if (Math.random() < 0.02 * difficulty) {
+      if (Math.random() < levelSettings.spawnRate * currentLevel) {
         createFallingObject();
+      }
+
+      // Spawn powerups based on chance
+      if (Math.random() < levelSettings.powerUpChance) {
+        createPowerUp();
       }
 
       // Update all falling objects
@@ -167,8 +199,15 @@ const Game: React.FC = () => {
       // Check collisions
       checkCollisions();
 
-      // Update difficulty based on score
-      setDifficulty(1 + Math.floor(score / 10) * 0.2);
+      // Update level based on score
+      const newLevel = Math.min(3, Math.floor(score / 1000) + 1);
+      if (newLevel !== currentLevel) {
+        setCurrentLevel(newLevel);
+        toast({
+          title: `Level ${newLevel}!`,
+          description: "Speed and difficulty increased!",
+        });
+      }
 
       gameLoopRef.current = requestAnimationFrame(gameLoop);
     };
@@ -180,17 +219,19 @@ const Game: React.FC = () => {
         cancelAnimationFrame(gameLoopRef.current);
       }
     };
-  }, [isGameOver, isPaused, gameWidth, gameHeight, score, playerPosition, fallingObjects]);
+  }, [isGameOver, isPaused, gameWidth, gameHeight, score, playerPosition, fallingObjects, currentLevel, toast]);
 
   // Create falling objects
   const createFallingObject = () => {
     if (!gameWidth) return;
 
-    const id = Date.now();
+    const id = Date.now() + Math.random();
     const width = 30;
     const x = Math.random() * (gameWidth - width);
-    const isCoin = Math.random() > 0.3; // 70% chance for coins, 30% for obstacles
-    const speed = (1 + Math.random() * difficulty) * 0.2; // Speed increases with difficulty
+    const levelSettings = GAME_LEVELS[currentLevel as keyof typeof GAME_LEVELS];
+    
+    const isCoin = Math.random() > levelSettings.obstacleRate; // Percentuale variabile di monete vs ostacoli
+    const speed = levelSettings.speed * (1 + Math.random() * 0.5); // Velocità basata sul livello attuale
 
     const newObject: FallingObject = {
       id,
@@ -203,6 +244,34 @@ const Game: React.FC = () => {
     };
 
     setFallingObjects(prev => [...prev, newObject]);
+  };
+  
+  // Create powerups
+  const createPowerUp = () => {
+    if (!gameWidth) return;
+    
+    const id = Date.now() + Math.random();
+    const width = 30;
+    const x = Math.random() * (gameWidth - width);
+    const levelSettings = GAME_LEVELS[currentLevel as keyof typeof GAME_LEVELS];
+    const speed = levelSettings.speed * 0.8; // Powerups move a bit slower
+    
+    // Scegli casualmente un tipo di powerup
+    const powerTypes: Array<PowerUpObject['powerType']> = ['invincibility', 'extraLife', 'doublePoints'];
+    const powerType = powerTypes[Math.floor(Math.random() * powerTypes.length)];
+    
+    const newPowerUp: PowerUpObject = {
+      id,
+      x,
+      y: -30,
+      width,
+      height: 30,
+      speed,
+      type: 'powerup',
+      powerType
+    };
+    
+    setFallingObjects(prev => [...prev, newPowerUp]);
   };
 
   // Update falling objects positions
@@ -231,6 +300,8 @@ const Game: React.FC = () => {
       const remaining = [];
       let scoreIncrement = 0;
       let lostLife = false;
+      let powerupCollected = false;
+      let powerupType: PowerUpObject['powerType'] | null = null;
 
       for (const obj of prev) {
         const objectRect = {
@@ -249,9 +320,16 @@ const Game: React.FC = () => {
         ) {
           // Handle collision based on object type
           if (obj.type === 'coin') {
-            scoreIncrement++;
+            // Se è attivo il double points, raddoppia il punteggio
+            scoreIncrement += hasDoublePoints ? 2 : 1;
           } else if (obj.type === 'obstacle') {
-            lostLife = true;
+            // Se non siamo invincibili, perdiamo una vita
+            if (!isInvincible) {
+              lostLife = true;
+            }
+          } else if (obj.type === 'powerup') {
+            powerupCollected = true;
+            powerupType = obj.powerType;
           }
         } else {
           remaining.push(obj);
@@ -260,7 +338,7 @@ const Game: React.FC = () => {
 
       // Update score and lives
       if (scoreIncrement > 0) {
-        setScore(s => s + scoreIncrement);
+        setScore(s => s + scoreIncrement * 100);
       }
       
       if (lostLife) {
@@ -283,9 +361,74 @@ const Game: React.FC = () => {
           return newLives;
         });
       }
+      
+      // Gestisci i powerup raccolti
+      if (powerupCollected && powerupType) {
+        handlePowerUp(powerupType);
+      }
 
       return remaining;
     });
+  };
+  
+  // Gestisci i powerup raccolti
+  const handlePowerUp = (powerType: PowerUpObject['powerType']) => {
+    switch (powerType) {
+      case 'invincibility':
+        setIsInvincible(true);
+        toast({
+          title: "Invincibility!",
+          description: "You are invincible for 5 seconds!",
+        });
+        
+        // Clear any existing timeout
+        if (invincibilityTimeoutRef.current) {
+          clearTimeout(invincibilityTimeoutRef.current);
+        }
+        
+        // Set new timeout
+        invincibilityTimeoutRef.current = window.setTimeout(() => {
+          setIsInvincible(false);
+          toast({
+            title: "Invincibility ended!",
+            description: "Be careful now!",
+          });
+        }, 5000);
+        break;
+        
+      case 'extraLife':
+        setLives(l => {
+          const newLives = l + 1;
+          toast({
+            title: "Extra Life!",
+            description: `You now have ${newLives} lives!`,
+          });
+          return newLives;
+        });
+        break;
+        
+      case 'doublePoints':
+        setHasDoublePoints(true);
+        toast({
+          title: "Double Points!",
+          description: "Points are doubled for 10 seconds!",
+        });
+        
+        // Clear any existing timeout
+        if (doublePointsTimeoutRef.current) {
+          clearTimeout(doublePointsTimeoutRef.current);
+        }
+        
+        // Set new timeout
+        doublePointsTimeoutRef.current = window.setTimeout(() => {
+          setHasDoublePoints(false);
+          toast({
+            title: "Double Points ended!",
+            description: "Back to normal points.",
+          });
+        }, 10000);
+        break;
+    }
   };
 
   // Touch input handling
@@ -334,8 +477,18 @@ const Game: React.FC = () => {
     setScore(0);
     setLives(3);
     setFallingObjects([]);
-    setDifficulty(1);
+    setCurrentLevel(1);
     setIsGameOver(false);
+    setIsInvincible(false);
+    setHasDoublePoints(false);
+    
+    if (invincibilityTimeoutRef.current) {
+      clearTimeout(invincibilityTimeoutRef.current);
+    }
+    
+    if (doublePointsTimeoutRef.current) {
+      clearTimeout(doublePointsTimeoutRef.current);
+    }
     
     toast({
       title: "New Game Started!",
@@ -354,7 +507,7 @@ const Game: React.FC = () => {
       {/* Player character */}
       <div 
         ref={playerRef} 
-        className="player"
+        className={`player ${isInvincible ? 'invincible' : ''} ${hasDoublePoints ? 'double-points' : ''}`}
         style={{ 
           left: `${playerPosition.x}px`,
           bottom: `100px`
@@ -365,13 +518,19 @@ const Game: React.FC = () => {
       {fallingObjects.map((obj) => (
         <div
           key={obj.id}
-          className={obj.type === 'coin' ? 'coin' : 'obstacle'}
+          className={
+            obj.type === 'coin' 
+              ? 'coin' 
+              : obj.type === 'obstacle' 
+                ? 'obstacle' 
+                : `powerup powerup-${obj.powerType}`
+          }
           style={{
             left: `${obj.x}px`,
             top: `${obj.y}px`,
             width: `${obj.width}px`,
             height: `${obj.height}px`,
-            borderRadius: obj.type === 'coin' ? '50%' : '0px'
+            borderRadius: obj.type === 'coin' || obj.type === 'powerup' ? '50%' : '0px'
           }}
         ></div>
       ))}
@@ -382,10 +541,28 @@ const Game: React.FC = () => {
           <Coins className="mr-2" size={20} color="gold" />
           <span>{score}</span>
         </div>
+        <div className="flex items-center mb-2">
+          <span className="mr-2">Level: {currentLevel}</span>
+        </div>
         <div className="flex items-center">
           {Array.from({ length: lives }).map((_, i) => (
             <Heart key={i} size={20} color="red" fill="red" className="mr-1" />
           ))}
+        </div>
+        {/* Status indicators */}
+        <div className="flex items-center mt-2">
+          {isInvincible && (
+            <div className="flex items-center mr-2 text-yellow-400">
+              <Star size={16} className="mr-1" />
+              <span>Invincible</span>
+            </div>
+          )}
+          {hasDoublePoints && (
+            <div className="flex items-center text-green-400">
+              <Coins size={16} className="mr-1" />
+              <span>2x Points</span>
+            </div>
+          )}
         </div>
       </div>
       
