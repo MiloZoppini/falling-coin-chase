@@ -954,6 +954,9 @@ const Game: React.FC = () => {
     setSavedScore(false);
     setAreControlsReversed(false);
     lastPowerUpTime.current = 0;
+    
+    setShowSheilaAnimation(true);
+    lastSheilaAnimationTime.current = Date.now();
   };
 
   const getMedalColor = (position: number): string => {
