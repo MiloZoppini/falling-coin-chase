@@ -920,10 +920,10 @@ const Game: React.FC = () => {
     setIsHurt(false);
     setIsEjecting(false);
     setSavedScore(false);
-    setAreControlsReversed(false);
-    lastPowerUpTime.current = 0;
-
-    setShowSheilaAnimation(true);
+    
+    setTimeout(() => {
+      setShowSheilaAnimation(true);
+    }, 1000);
   };
 
   const getMedalColor = (position: number): string => {
