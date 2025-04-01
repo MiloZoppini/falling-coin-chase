@@ -1,8 +1,8 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Coins, Heart, Star } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
+import images from '@/assets';
 
 // Game objects interfaces
 interface GameObject {
@@ -151,12 +151,10 @@ const Game: React.FC = () => {
 
       const levelSettings = GAME_LEVELS[currentLevel as keyof typeof GAME_LEVELS];
       
-      // Spawn objects based on level settings and time passed
       if (Math.random() < levelSettings.spawnRate * deltaTime * 0.1) {
         createFallingObject();
       }
 
-      // Power-ups should be rare (and with a minimum time between them)
       const now = Date.now();
       const timeSinceLastPowerUp = now - lastPowerUpTime.current;
       if (timeSinceLastPowerUp > 15000 && Math.random() < levelSettings.powerUpChance * deltaTime * 0.01) {
@@ -167,7 +165,6 @@ const Game: React.FC = () => {
       updateFallingObjects(deltaTime);
       checkCollisions();
 
-      // Progress level based on score
       const newLevel = Math.min(3, Math.floor(score / 1500) + 1);
       if (newLevel !== currentLevel) {
         setCurrentLevel(newLevel);
@@ -238,14 +235,11 @@ const Game: React.FC = () => {
     const levelSettings = GAME_LEVELS[currentLevel as keyof typeof GAME_LEVELS];
     const speed = levelSettings.speed * 0.8;
 
-    // Weight the power-ups so extraLife is rarer
     const powerTypes: Array<PowerUpObject['powerType']> = [];
     
-    // 10% chance for extra life
     if (Math.random() < 0.1) {
       powerTypes.push('extraLife');
     } else {
-      // 50% chance for each of the other power-ups
       powerTypes.push(Math.random() < 0.5 ? 'invincibility' : 'doublePoints');
     }
     
@@ -378,7 +372,6 @@ const Game: React.FC = () => {
         
       case 'extraLife':
         setLives(l => {
-          // Cap maximum lives at 5
           const newLives = Math.min(5, l + 1);
           toast({
             title: "Extra Life!",
@@ -399,7 +392,6 @@ const Game: React.FC = () => {
           clearTimeout(doublePointsTimeoutRef.current);
         }
         
-        // Reduce double points duration to 8 seconds
         doublePointsTimeoutRef.current = window.setTimeout(() => {
           setHasDoublePoints(false);
           toast({
@@ -487,29 +479,57 @@ const Game: React.FC = () => {
         className={`player ${isInvincible ? 'invincible' : ''} ${hasDoublePoints ? 'double-points' : ''}`}
         style={{ 
           left: `${playerPosition.x}px`,
-          bottom: `100px`
+          bottom: `100px`,
+          backgroundImage: `url(${images.player})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center'
         }}
       ></div>
       
-      {fallingObjects.map((obj) => (
-        <div
-          key={obj.id}
-          className={
-            obj.type === 'coin' 
-              ? 'coin' 
-              : obj.type === 'obstacle' 
-                ? 'obstacle' 
-                : `powerup powerup-${obj.powerType}`
+      {fallingObjects.map((obj) => {
+        let backgroundImage = '';
+        
+        if (obj.type === 'coin') {
+          backgroundImage = images.coin;
+        } else if (obj.type === 'obstacle') {
+          backgroundImage = images.obstacle;
+        } else if (obj.type === 'powerup') {
+          switch(obj.powerType) {
+            case 'invincibility':
+              backgroundImage = images.powerups.invincibility;
+              break;
+            case 'extraLife':
+              backgroundImage = images.powerups.extraLife;
+              break;
+            case 'doublePoints':
+              backgroundImage = images.powerups.doublePoints;
+              break;
           }
-          style={{
-            left: `${obj.x}px`,
-            top: `${obj.y}px`,
-            width: `${obj.width}px`,
-            height: `${obj.height}px`,
-            borderRadius: obj.type === 'coin' || obj.type === 'powerup' ? '50%' : '0px'
-          }}
-        ></div>
-      ))}
+        }
+        
+        return (
+          <div
+            key={obj.id}
+            className={
+              obj.type === 'coin' 
+                ? 'coin' 
+                : obj.type === 'obstacle' 
+                  ? 'obstacle' 
+                  : `powerup powerup-${obj.powerType}`
+            }
+            style={{
+              left: `${obj.x}px`,
+              top: `${obj.y}px`,
+              width: `${obj.width}px`,
+              height: `${obj.height}px`,
+              borderRadius: obj.type === 'coin' || obj.type === 'powerup' ? '50%' : '0px',
+              backgroundImage: `url(${backgroundImage})`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center'
+            }}
+          ></div>
+        );
+      })}
       
       <div className="game-stats">
         <div className="flex items-center mb-2">
