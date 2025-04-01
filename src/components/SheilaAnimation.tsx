@@ -33,7 +33,7 @@ const SheilaAnimation: React.FC<SheilaAnimationProps> = ({
     // Console log to debug
     console.log("Starting Sheila animation", { gameWidth, gameHeight, floorLevel });
 
-    const animationDuration = 4000; // 4 seconds to cross the screen
+    const animationDuration = 6000; // 6 seconds to cross the screen (slowed down)
     const fadeOutDuration = 500; // 0.5 seconds
     const startTime = Date.now();
     
@@ -47,7 +47,7 @@ const SheilaAnimation: React.FC<SheilaAnimationProps> = ({
       const progress = Math.min(elapsed / animationDuration, 1);
       
       // Calculate positions based on animation progress
-      if (progress < 0.85) {
+      if (progress < 0.9) {
         // Move from left to right
         const newX = -100 + (gameWidth + 200) * progress;
         const hammerX = -170 + (gameWidth + 200) * progress;
@@ -57,18 +57,19 @@ const SheilaAnimation: React.FC<SheilaAnimationProps> = ({
         setOpacity(1);
         
         // Debug log during animation
-        if (elapsed % 500 === 0) { // Log every 500ms to avoid flooding console
+        if (elapsed % 1000 === 0) { // Log every second to avoid flooding console
           console.log("Sheila animation in progress", { 
             progress, 
             newX, 
             hammerX, 
             gameWidth,
-            walkFrame
+            walkFrame,
+            floorLevel
           });
         }
       } else {
         // Fade out
-        const fadeProgress = (progress - 0.85) / 0.15;
+        const fadeProgress = (progress - 0.9) / 0.1;
         setOpacity(1 - fadeProgress);
       }
       
@@ -107,7 +108,7 @@ const SheilaAnimation: React.FC<SheilaAnimationProps> = ({
           backgroundRepeat: 'no-repeat',
           backgroundPosition: 'center',
           opacity,
-          zIndex: 999, // Even higher zIndex to ensure it appears in front
+          zIndex: 1000, // Higher zIndex to ensure it appears in front
           transform: 'rotate(10deg)' // Slightly rotate the hammer for a dynamic look
         }}
       />
@@ -117,14 +118,14 @@ const SheilaAnimation: React.FC<SheilaAnimationProps> = ({
           position: 'absolute',
           left: `${position.x}px`,
           top: `${position.y}px`,
-          width: '120px', // Even larger size for better visibility
-          height: '140px', // Even larger size for better visibility
+          width: '120px',
+          height: '140px',
           backgroundImage: `url('/images/Sheila.png')`,
           backgroundSize: 'contain',
           backgroundRepeat: 'no-repeat',
           backgroundPosition: 'center',
           opacity,
-          zIndex: 999, // Even higher zIndex to ensure it appears in front
+          zIndex: 1000, // Higher zIndex to ensure it appears in front
           animation: walkFrame === 1 ? 'sheila-step 0.2s ease-in-out' : 'none'
         }}
       />
