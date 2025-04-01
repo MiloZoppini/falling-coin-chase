@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Coins, Heart } from 'lucide-react';
@@ -39,6 +40,11 @@ const Game: React.FC = () => {
   const [fallingObjects, setFallingObjects] = useState<FallingObject[]>([]);
   const [difficulty, setDifficulty] = useState<number>(1);
   const [isPaused, setIsPaused] = useState<boolean>(false);
+  
+  // Movimento del giocatore
+  const [isMovingLeft, setIsMovingLeft] = useState<boolean>(false);
+  const [isMovingRight, setIsMovingRight] = useState<boolean>(false);
+  const playerSpeed = 8; // Velocità di movimento del giocatore
 
   // Initial setup
   useEffect(() => {
@@ -75,6 +81,66 @@ const Game: React.FC = () => {
       }
     };
   }, [toast]);
+
+  // Keyboard controls
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (isGameOver) return;
+      
+      if (e.key === 'ArrowLeft' || e.key === 'a') {
+        setIsMovingLeft(true);
+      }
+      if (e.key === 'ArrowRight' || e.key === 'd') {
+        setIsMovingRight(true);
+      }
+    };
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowLeft' || e.key === 'a') {
+        setIsMovingLeft(false);
+      }
+      if (e.key === 'ArrowRight' || e.key === 'd') {
+        setIsMovingRight(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, [isGameOver]);
+
+  // Player movement
+  useEffect(() => {
+    if (isGameOver || isPaused) return;
+
+    const movePlayer = () => {
+      setPlayerPosition(prev => {
+        const playerWidth = playerRef.current?.offsetWidth || 40;
+        let newX = prev.x;
+
+        if (isMovingLeft) {
+          newX = Math.max(0, newX - playerSpeed);
+        }
+        if (isMovingRight) {
+          newX = Math.min(gameWidth - playerWidth, newX + playerSpeed);
+        }
+
+        return { ...prev, x: newX };
+      });
+
+      if (isMovingLeft || isMovingRight) {
+        requestAnimationFrame(movePlayer);
+      }
+    };
+
+    if (isMovingLeft || isMovingRight) {
+      movePlayer();
+    }
+  }, [isMovingLeft, isMovingRight, isPaused, isGameOver, gameWidth]);
 
   // Game loop
   useEffect(() => {
@@ -246,6 +312,23 @@ const Game: React.FC = () => {
     touchStartXRef.current = null;
   };
 
+  // Controlli con bottoni per dispositivi mobili
+  const startMovingLeft = () => {
+    if (!isGameOver) setIsMovingLeft(true);
+  };
+
+  const stopMovingLeft = () => {
+    setIsMovingLeft(false);
+  };
+
+  const startMovingRight = () => {
+    if (!isGameOver) setIsMovingRight(true);
+  };
+
+  const stopMovingRight = () => {
+    setIsMovingRight(false);
+  };
+
   // Reset game function
   const resetGame = () => {
     setScore(0);
@@ -304,6 +387,30 @@ const Game: React.FC = () => {
             <Heart key={i} size={20} color="red" fill="red" className="mr-1" />
           ))}
         </div>
+      </div>
+      
+      {/* Controlli mobili */}
+      <div className="mobile-controls">
+        <button 
+          className="control-button left-button"
+          onTouchStart={startMovingLeft}
+          onTouchEnd={stopMovingLeft}
+          onMouseDown={startMovingLeft}
+          onMouseUp={stopMovingLeft}
+          onMouseLeave={stopMovingLeft}
+        >
+          &larr;
+        </button>
+        <button 
+          className="control-button right-button"
+          onTouchStart={startMovingRight}
+          onTouchEnd={stopMovingRight}
+          onMouseDown={startMovingRight}
+          onMouseUp={stopMovingRight}
+          onMouseLeave={stopMovingRight}
+        >
+          &rarr;
+        </button>
       </div>
       
       {/* Game over overlay */}

@@ -185,4 +185,44 @@
   .hidden {
     display: none;
   }
+  
+  /* Mobile controls */
+  .mobile-controls {
+    position: absolute;
+    bottom: 20px;
+    left: 0;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    padding: 0 20px;
+    z-index: 20;
+  }
+  
+  .control-button {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background-color: rgba(255, 255, 255, 0.3);
+    color: white;
+    font-size: 24px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border: none;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  .control-button:active {
+    background-color: rgba(255, 255, 255, 0.5);
+  }
+  
+  .left-button {
+    margin-right: auto;
+  }
+  
+  .right-button {
+    margin-left: auto;
+  }
 }
