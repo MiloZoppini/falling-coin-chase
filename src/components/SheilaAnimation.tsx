@@ -12,13 +12,14 @@ const SheilaAnimation: React.FC<SheilaAnimationProps> = ({
   gameHeight, 
   onAnimationComplete 
 }) => {
+  // Setting both Sheila and hammer to start at the same height, centered vertically in the game area
   const [position, setPosition] = useState<{ x: number; y: number }>({ 
-    x: -80, 
-    y: gameHeight / 2 - 50 
+    x: -100, 
+    y: gameHeight / 2 - 40 // Centered vertically in game area
   });
   const [hammerPosition, setHammerPosition] = useState<{ x: number; y: number }>({ 
-    x: -150, 
-    y: gameHeight / 2 - 30 
+    x: -170, // Position hammer a bit behind Sheila
+    y: gameHeight / 2 - 40 // Same height as Sheila
   });
   const [opacity, setOpacity] = useState(1);
   const [isAnimating, setIsAnimating] = useState(true);
@@ -37,11 +38,11 @@ const SheilaAnimation: React.FC<SheilaAnimationProps> = ({
       // Calculate positions based on animation progress
       if (progress < 0.85) {
         // Move from left to right
-        const newX = -80 + (gameWidth + 100) * progress;
-        const hammerX = -150 + (gameWidth + 100) * progress;
+        const newX = -100 + (gameWidth + 200) * progress;
+        const hammerX = -170 + (gameWidth + 200) * progress;
         
-        setPosition({ x: newX, y: gameHeight / 2 - 50 });
-        setHammerPosition({ x: hammerX, y: gameHeight / 2 - 30 });
+        setPosition({ x: newX, y: gameHeight / 2 - 40 });
+        setHammerPosition({ x: hammerX, y: gameHeight / 2 - 40 });
         setOpacity(1);
       } else {
         // Fade out
@@ -74,14 +75,14 @@ const SheilaAnimation: React.FC<SheilaAnimationProps> = ({
           position: 'absolute',
           left: `${hammerPosition.x}px`,
           top: `${hammerPosition.y}px`,
-          width: '60px',
-          height: '60px',
+          width: '80px', // Increased size
+          height: '80px', // Increased size
           backgroundImage: `url('/images/martello.png')`,
           backgroundSize: 'contain',
           backgroundRepeat: 'no-repeat',
           backgroundPosition: 'center',
           opacity,
-          zIndex: 10
+          zIndex: 25 // Higher zIndex to appear in front of player
         }}
       />
       <div
@@ -90,14 +91,14 @@ const SheilaAnimation: React.FC<SheilaAnimationProps> = ({
           position: 'absolute',
           left: `${position.x}px`,
           top: `${position.y}px`,
-          width: '80px',
-          height: '80px',
+          width: '100px', // Increased size
+          height: '100px', // Increased size
           backgroundImage: `url('/images/Sheila.png')`,
           backgroundSize: 'contain',
           backgroundRepeat: 'no-repeat',
           backgroundPosition: 'center',
           opacity,
-          zIndex: 9
+          zIndex: 25 // Higher zIndex to appear in front of player
         }}
       />
     </>
