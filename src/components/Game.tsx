@@ -8,7 +8,6 @@ import {
   Table,
   TableBody,
   TableCell,
-  TableHead,
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
@@ -48,9 +47,9 @@ interface VodkaObject extends GameObject {
 type FallingObject = CoinObject | ObstacleObject | PowerUpObject | HeartObject | VodkaObject;
 
 const GAME_LEVELS = {
-  1: { speed: 0.2, spawnRate: 0.02, obstacleRate: 0.3, powerUpChance: 0.02, heartChance: 0.03, vodkaChance: 0.02 },
-  2: { speed: 0.3, spawnRate: 0.03, obstacleRate: 0.4, powerUpChance: 0.015, heartChance: 0.025, vodkaChance: 0.025 },
-  3: { speed: 0.4, spawnRate: 0.04, obstacleRate: 0.5, powerUpChance: 0.01, heartChance: 0.02, vodkaChance: 0.03 }
+  1: { speed: 0.2, spawnRate: 0.02, obstacleRate: 0.3, powerUpChance: 0.02, heartChance: 0.5, vodkaChance: 0.02 },
+  2: { speed: 0.3, spawnRate: 0.03, obstacleRate: 0.4, powerUpChance: 0.015, heartChance: 0.5, vodkaChance: 0.025 },
+  3: { speed: 0.4, spawnRate: 0.04, obstacleRate: 0.5, powerUpChance: 0.01, heartChance: 0.5, vodkaChance: 0.03 }
 };
 
 const COIN_TYPES = {
@@ -907,7 +906,7 @@ const Game: React.FC = () => {
                   : obj.type === 'obstacle' 
                     ? 'obstacle' 
                     : obj.type === 'heart'
-                      ? 'heart'
+                      ? 'heart pulsing-heart'
                       : obj.type === 'vodka'
                         ? 'vodka'
                         : `powerup powerup-${(obj as PowerUpObject).powerType}`
@@ -928,8 +927,8 @@ const Game: React.FC = () => {
                         ? `url('/images/vodka.webp')`
                         : `url('/images/nuke.png')`,
                 backgroundSize: 'contain',
-                backgroundPosition: 'center',
                 backgroundRepeat: 'no-repeat',
+                backgroundPosition: 'center'
               }}
             ></div>
           ))}
@@ -1046,9 +1045,9 @@ const Game: React.FC = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-12">Rank</TableHead>
-                  <TableHead>Player</TableHead>
-                  <TableHead className="text-right">Score</TableHead>
+                  <TableCell className="w-12">Rank</TableCell>
+                  <TableCell>Player</TableCell>
+                  <TableCell className="text-right">Score</TableCell>
                 </TableRow>
               </TableHeader>
               <TableBody>
