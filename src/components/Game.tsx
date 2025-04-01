@@ -14,7 +14,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-// Game objects interfaces
 interface GameObject {
   id: number;
   x: number;
@@ -39,7 +38,6 @@ interface PowerUpObject extends GameObject {
 
 type FallingObject = CoinObject | ObstacleObject | PowerUpObject;
 
-// Game levels
 const GAME_LEVELS = {
   1: { speed: 0.2, spawnRate: 0.02, obstacleRate: 0.3, powerUpChance: 0.02 },
   2: { speed: 0.3, spawnRate: 0.03, obstacleRate: 0.4, powerUpChance: 0.015 },
@@ -358,6 +356,16 @@ const Game: React.FC = () => {
     const playerWidth = playerRect.width;
     const playerHeight = playerRect.height;
 
+    const hitboxReduction = playerWidth * 0.25;
+    const preciseHitbox = {
+      left: playerX + hitboxReduction,
+      top: playerY + playerHeight * 0.1,
+      right: playerX + playerWidth - hitboxReduction,
+      bottom: playerY + playerHeight - playerHeight * 0.05,
+      width: playerWidth - (hitboxReduction * 2),
+      height: playerHeight - (playerHeight * 0.15)
+    };
+
     setFallingObjects(prev => {
       const remaining = [];
       let scoreIncrement = 0;
@@ -373,12 +381,13 @@ const Game: React.FC = () => {
           bottom: obj.y + obj.height
         };
 
-        if (
-          playerX < objectRect.right &&
-          playerX + playerWidth > objectRect.left &&
-          playerY < objectRect.bottom &&
-          playerY + playerHeight > objectRect.top
-        ) {
+        const collision = 
+          preciseHitbox.left < objectRect.right &&
+          preciseHitbox.right > objectRect.left &&
+          preciseHitbox.top < objectRect.bottom &&
+          preciseHitbox.bottom > objectRect.top;
+
+        if (collision) {
           if (obj.type === 'coin') {
             scoreIncrement += hasDoublePoints ? 2 : 1;
           } else if (obj.type === 'obstacle') {
@@ -606,7 +615,7 @@ const Game: React.FC = () => {
     switch (position) {
       case 0: return "gold";
       case 1: return "silver";
-      case 2: return "#CD7F32"; // bronze
+      case 2: return "#CD7F32";
       default: return "currentColor";
     }
   };
