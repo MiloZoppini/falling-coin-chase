@@ -120,7 +120,9 @@ const Game: React.FC = () => {
 
   const [isMuscleMartin, setIsMuscleMartin] = useState<boolean>(false);
   const [isHurt, setIsHurt] = useState<boolean>(false);
+  const [isTemporarilyImmune, setIsTemporarilyImmune] = useState<boolean>(false);
   const hurtTimeoutRef = useRef<number | null>(null);
+  const temporaryImmunityTimeoutRef = useRef<number | null>(null);
   
   const [areControlsReversed, setAreControlsReversed] = useState<boolean>(false);
   const controlsReversedTimeoutRef = useRef<number | null>(null);
@@ -669,7 +671,7 @@ const Game: React.FC = () => {
             const pointsAwarded = hasDoublePoints ? obj.pointValue * 2 : obj.pointValue;
             scoreIncrement += pointsAwarded;
           } else if (obj.type === 'obstacle') {
-            if (!isInvincible) {
+            if (!isInvincible && !isTemporarilyImmune) {
               lostLife = true;
             }
           } else if (obj.type === 'powerup') {
@@ -707,6 +709,17 @@ const Game: React.FC = () => {
             hurtTimeoutRef.current = window.setTimeout(() => {
               setIsHurt(false);
             }, 900);
+
+            setIsTemporarilyImmune(true);
+            
+            if (temporaryImmunityTimeoutRef.current) {
+              clearTimeout(temporaryImmunityTimeoutRef.current);
+            }
+            
+            temporaryImmunityTimeoutRef.current = window.setTimeout(() => {
+              setIsTemporarilyImmune(false);
+              temporaryImmunityTimeoutRef.current = null;
+            }, 1000);
           }
           
           if (newLives <= 0) {
@@ -986,7 +999,7 @@ const Game: React.FC = () => {
           
           <div 
             ref={playerRef} 
-            className={`player ${isInvincible ? 'invincible' : ''} ${hasDoublePoints ? 'double-points' : ''} ${isWalking ? 'walking' : ''} ${isHurt ? 'hurt' : ''} ${isEjecting ? 'ejecting' : ''} ${areControlsReversed ? 'drunk' : ''}`}
+            className={`player ${isInvincible ? 'invincible' : ''} ${isTemporarilyImmune ? 'temp-immune' : ''} ${hasDoublePoints ? 'double-points' : ''} ${isWalking ? 'walking' : ''} ${isHurt ? 'hurt' : ''} ${isEjecting ? 'ejecting' : ''} ${areControlsReversed ? 'drunk' : ''}`}
             style={{ 
               left: `${playerPosition.x}px`,
               bottom: `100px`,
@@ -1001,7 +1014,8 @@ const Game: React.FC = () => {
               transform: playerDirection === 'left' ? 'scaleX(-1)' : 'scaleX(1)',
               transition: 'transform 0.2s ease-out',
               width: isInvincible ? '108px' : '72px',
-              height: '72px'
+              height: '72px',
+              opacity: isTemporarilyImmune ? (Math.floor(Date.now() / 100) % 2 ? 0.7 : 1) : 1
             }}
           ></div>
           
