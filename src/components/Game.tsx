@@ -117,7 +117,7 @@ const Game: React.FC = () => {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (isGameOver) return;
+      if (isGameOver || isEjecting) return;
       
       if (e.key === 'ArrowLeft' || e.key === 'a') {
         keysPressed.current.left = true;
@@ -147,10 +147,10 @@ const Game: React.FC = () => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [isGameOver]);
+  }, [isGameOver, isEjecting]);
 
   useEffect(() => {
-    if (isGameOver || isPaused) return;
+    if (isGameOver || isPaused || isEjecting) return;
 
     const gameLoop = (timestamp: number) => {
       const deltaTime = timestamp - lastFrameTimeRef.current;
@@ -198,7 +198,7 @@ const Game: React.FC = () => {
         cancelAnimationFrame(gameLoopRef.current);
       }
     };
-  }, [isGameOver, isPaused, gameWidth, gameHeight, score, currentLevel, toast]);
+  }, [isGameOver, isPaused, gameWidth, gameHeight, score, currentLevel, toast, isEjecting]);
 
   useEffect(() => {
     lastPlayerPositionsRef.current.push({ x: playerPosition.x, direction: playerDirection });
@@ -227,6 +227,8 @@ const Game: React.FC = () => {
   }, [playerPosition, playerDirection, isWalking]);
 
   const movePlayer = () => {
+    if (isEjecting) return;
+    
     setPlayerPosition(prev => {
       const playerWidth = playerRef.current?.offsetWidth || 40;
       let newX = prev.x;
@@ -375,6 +377,9 @@ const Game: React.FC = () => {
           
           if (newLives <= 0) {
             setIsEjecting(true);
+            keysPressed.current.left = false;
+            keysPressed.current.right = false;
+            setIsWalking(false);
             
             setTimeout(() => {
               setIsGameOver(true);
@@ -445,13 +450,13 @@ const Game: React.FC = () => {
   };
 
   const handleTouchStart = (e: React.TouchEvent) => {
-    if (isGameOver) return;
+    if (isGameOver || isEjecting) return;
     touchStartXRef.current = e.touches[0].clientX;
     setIsWalking(false);
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    if (isGameOver || touchStartXRef.current === null || !playerRef.current) return;
+    if (isGameOver || isEjecting || touchStartXRef.current === null || !playerRef.current) return;
     
     const touchX = e.touches[0].clientX;
     const diffX = touchX - touchStartXRef.current;
@@ -478,7 +483,7 @@ const Game: React.FC = () => {
   };
 
   const startMovingLeft = () => {
-    if (!isGameOver) {
+    if (!isGameOver && !isEjecting) {
       keysPressed.current.left = true;
       setPlayerDirection('left');
       setIsWalking(true);
@@ -491,7 +496,7 @@ const Game: React.FC = () => {
   };
 
   const startMovingRight = () => {
-    if (!isGameOver) {
+    if (!isGameOver && !isEjecting) {
       keysPressed.current.right = true;
       setPlayerDirection('right');
       setIsWalking(true);
