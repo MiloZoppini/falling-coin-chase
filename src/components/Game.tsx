@@ -56,6 +56,7 @@ const Game: React.FC = () => {
   const [playerDirection, setPlayerDirection] = useState<'left' | 'right'>('right');
   const [isWalking, setIsWalking] = useState<boolean>(false);
   const [isDogWalking, setIsDogWalking] = useState<boolean>(false);
+  const [isEjecting, setIsEjecting] = useState<boolean>(false);
   
   const keysPressed = useRef<{left: boolean, right: boolean}>({
     left: false,
@@ -373,12 +374,24 @@ const Game: React.FC = () => {
           }
           
           if (newLives <= 0) {
-            setIsGameOver(true);
-            toast({
-              title: "Game Over!",
-              description: `Final score: ${score}`,
-              variant: "destructive"
-            });
+            setIsEjecting(true);
+            
+            setTimeout(() => {
+              setIsGameOver(true);
+              
+              setTimeout(() => {
+                const gameOverElement = document.querySelector('.game-over');
+                if (gameOverElement) {
+                  gameOverElement.classList.add('visible');
+                }
+              }, 1500);
+              
+              toast({
+                title: "Game Over!",
+                description: `Final score: ${score}`,
+                variant: "destructive"
+              });
+            }, 2000);
           } else {
             toast({
               title: "Hit!",
@@ -499,7 +512,13 @@ const Game: React.FC = () => {
     setIsInvincible(false);
     setHasDoublePoints(false);
     setIsHurt(false);
+    setIsEjecting(false);
     lastPowerUpTime.current = 0;
+    
+    const gameOverElement = document.querySelector('.game-over');
+    if (gameOverElement) {
+      gameOverElement.classList.remove('visible');
+    }
     
     if (invincibilityTimeoutRef.current) {
       clearTimeout(invincibilityTimeoutRef.current);
@@ -535,7 +554,7 @@ const Game: React.FC = () => {
     >
       <div 
         ref={playerRef} 
-        className={`player ${isInvincible ? 'invincible' : ''} ${hasDoublePoints ? 'double-points' : ''} ${isWalking ? 'walking' : ''} ${isHurt ? 'hurt' : ''}`}
+        className={`player ${isInvincible ? 'invincible' : ''} ${hasDoublePoints ? 'double-points' : ''} ${isWalking ? 'walking' : ''} ${isHurt ? 'hurt' : ''} ${isEjecting ? 'ejecting' : ''}`}
         style={{ 
           left: `${playerPosition.x}px`,
           bottom: `100px`,
@@ -554,7 +573,7 @@ const Game: React.FC = () => {
       
       <div 
         ref={dogRef} 
-        className={`dog ${isDogWalking ? 'walking' : ''}`}
+        className={`dog ${isDogWalking ? 'walking' : ''} ${isEjecting ? 'ejecting' : ''}`}
         style={{ 
           left: `${dogPosition.x}px`,
           bottom: `100px`,
