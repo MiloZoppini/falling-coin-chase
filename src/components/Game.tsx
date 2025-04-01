@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Coins, Heart, Star } from 'lucide-react';
@@ -391,6 +392,16 @@ const Game: React.FC = () => {
         title: "MUSCLE POWER!",
         description: "Martin transforms into MuscleMartin! Invincible for 5 seconds!",
       });
+      
+      // Apply earthquake effect
+      if (gameContainerRef.current) {
+        gameContainerRef.current.classList.add('earthquake');
+        setTimeout(() => {
+          if (gameContainerRef.current) {
+            gameContainerRef.current.classList.remove('earthquake');
+          }
+        }, 500);
+      }
       
       if (invincibilityTimeoutRef.current) {
         clearTimeout(invincibilityTimeoutRef.current);
