@@ -491,8 +491,8 @@ const Game: React.FC = () => {
     if (!gameWidth) return;
     
     const id = Date.now() + Math.random();
-    const width = 36;
-    const height = 36;
+    const width = 43;
+    const height = 43;
     const x = Math.random() * (gameWidth - width);
     const levelSettings = GAME_LEVELS[currentLevel as keyof typeof GAME_LEVELS];
     const speed = levelSettings.speed * 0.75;
@@ -624,7 +624,7 @@ const Game: React.FC = () => {
       }
       
       if (heartCollected) {
-        setLives(l => Math.min(l + 1, 5)); // Maximum 5 lives
+        setLives(l => Math.min(l + 1, 5));
       }
       
       if (powerupCollected && powerupType) {
@@ -641,7 +641,7 @@ const Game: React.FC = () => {
 
   const handlePowerUp = (powerType: PowerUpObject['powerType']) => {
     if (powerType === 'invincibility') {
-      const invincibilityDuration = 5; // 5 seconds
+      const invincibilityDuration = 5;
       
       if (invincibilityTimeoutRef.current) {
         clearTimeout(invincibilityTimeoutRef.current);
@@ -670,7 +670,7 @@ const Game: React.FC = () => {
   };
   
   const handleVodkaEffect = () => {
-    const vodkaDuration = 8; // 8 seconds of reversed controls
+    const vodkaDuration = 8;
     
     if (controlsReversedTimeoutRef.current) {
       clearTimeout(controlsReversedTimeoutRef.current);
