@@ -1,4 +1,3 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -8,8 +7,6 @@
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
 
-    /* ... keep existing code (altre variabili) */
-    
     /* Game colors */
     --game-bg: 215 50% 23%;
     --coin-color: 45 95% 56%;
@@ -24,8 +21,6 @@
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
 
-    /* ... keep existing code (altre variabili dark mode) */
-    
     /* Game colors (dark mode) */
     --game-bg: 215 30% 15%;
     --coin-color: 45 95% 56%;
@@ -63,10 +58,8 @@
 
   .player {
     position: absolute;
-    width: 40px;
-    height: 40px;
-    background-color: hsl(var(--player-color));
-    border-radius: 50%;
+    width: 60px;
+    height: 60px;
     bottom: 100px;
     left: 50%;
     transform: translateX(-50%);

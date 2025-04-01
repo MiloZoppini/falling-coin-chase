@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Coins, Heart, Star } from 'lucide-react';
@@ -487,7 +486,11 @@ const Game: React.FC = () => {
         className={`player ${isInvincible ? 'invincible' : ''} ${hasDoublePoints ? 'double-points' : ''}`}
         style={{ 
           left: `${playerPosition.x}px`,
-          bottom: `100px`
+          bottom: `100px`,
+          backgroundImage: `url(/images/martin.png)`,
+          backgroundSize: 'contain',
+          backgroundRepeat: 'no-repeat',
+          backgroundPosition: 'center'
         }}
       ></div>
       
