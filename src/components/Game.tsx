@@ -69,8 +69,8 @@ const POOP_POINT_VALUE = 150;
 const POOP_WIDTH = 29;
 const POOP_HEIGHT = 29;
 const AUTO_POOP_INTERVAL = 10000;
-const SHEILA_APPEARANCE_CHANCE = 0.7; // 70% chance
-const MIN_SHEILA_INTERVAL = 15000; // Minimum 15 seconds between appearances
+const SHEILA_APPEARANCE_CHANCE = 0.05; // Reduced chance - we'll show her at start anyway
+const MIN_SHEILA_INTERVAL = 30000; // Increased minimum interval to 30 seconds
 
 const Game: React.FC = () => {
   const isMobile = useIsMobile();
@@ -132,6 +132,8 @@ const Game: React.FC = () => {
   const [showNameModal, setShowNameModal] = useState<boolean>(true);
   const [highScores, setHighScores] = useState<HighScore[]>([]);
   const [savedScore, setSavedScore] = useState<boolean>(false);
+
+  const [hasShownInitialAnimation, setHasShownInitialAnimation] = useState<boolean>(false);
 
   useEffect(() => {
     const loadHighScores = async () => {
@@ -273,19 +275,19 @@ const Game: React.FC = () => {
 
       const levelSettings = GAME_LEVELS[currentLevel as keyof typeof GAME_LEVELS];
       
+      if (Math.random() < levelSettings.spawnRate * deltaTime * 0.1) {
+        createFallingObject();
+      }
+      
       const now = Date.now();
       const timeSinceLastSheila = now - lastSheilaAnimationTime.current;
       
       if (!showSheilaAnimation && 
           timeSinceLastSheila > MIN_SHEILA_INTERVAL && 
           Math.random() < SHEILA_APPEARANCE_CHANCE * deltaTime * 0.001) {
-        console.log("Triggering Sheila animation");
+        console.log("Triggering random Sheila animation");
         setShowSheilaAnimation(true);
         lastSheilaAnimationTime.current = now;
-      }
-
-      if (Math.random() < levelSettings.spawnRate * deltaTime * 0.1) {
-        createFallingObject();
       }
 
       const timeSinceLastPowerUp = now - lastPowerUpTime.current;
@@ -369,7 +371,7 @@ const Game: React.FC = () => {
         cancelAnimationFrame(gameLoopRef.current);
       }
     };
-  }, [isGameOver, isPaused, gameWidth, gameHeight, score, currentLevel, isEjecting, playerName, isInvincible, areControlsReversed, isDogWalking, lives, showSheilaAnimation]);
+  }, [isGameOver, isPaused, gameWidth, gameHeight, score, currentLevel, isEjecting, playerName, isInvincible, areControlsReversed, isDogWalking, lives, showSheilaAnimation, hasShownInitialAnimation]);
 
   useEffect(() => {
     lastPlayerPositionsRef.current.push({ x: playerPosition.x, direction: playerDirection });
@@ -950,9 +952,9 @@ const Game: React.FC = () => {
     setIsEjecting(false);
     setSavedScore(false);
     setAreControlsReversed(false);
-    lastPowerUpTime.current = 0;
     
     setShowSheilaAnimation(true);
+    setHasShownInitialAnimation(true);
     lastSheilaAnimationTime.current = Date.now();
   };
 

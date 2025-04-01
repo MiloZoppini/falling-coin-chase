@@ -6,6 +6,10 @@ const Index = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    // Preload Sheila's image
+    const sheilaImage = new Image();
+    sheilaImage.src = '/images/Sheila.png';
+    
     // Small delay to ensure all assets are loaded
     const timer = setTimeout(() => {
       setIsLoading(false);
@@ -22,7 +26,6 @@ const Index = () => {
             src="/images/Sheila.png" 
             alt="Loading" 
             className="w-32 h-32 animate-pulse"
-            style={{ visibility: 'hidden' }} 
           />
         </div>
       ) : (
