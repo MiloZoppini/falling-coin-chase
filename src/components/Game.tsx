@@ -273,16 +273,13 @@ const Game: React.FC = () => {
 
       const levelSettings = GAME_LEVELS[currentLevel as keyof typeof GAME_LEVELS];
       
-      if (Math.random() < levelSettings.spawnRate * deltaTime * 0.1) {
-        createFallingObject();
-      }
-
       const now = Date.now();
-      
       const timeSinceLastSheila = now - lastSheilaAnimationTime.current;
+      
       if (!showSheilaAnimation && 
           timeSinceLastSheila > MIN_SHEILA_INTERVAL && 
           Math.random() < SHEILA_APPEARANCE_CHANCE * deltaTime * 0.001) {
+        console.log("Triggering Sheila animation");
         setShowSheilaAnimation(true);
         lastSheilaAnimationTime.current = now;
       }
@@ -969,6 +966,7 @@ const Game: React.FC = () => {
   };
 
   const handleSheilaAnimationComplete = () => {
+    console.log("Sheila animation complete, setting showSheilaAnimation to false");
     setShowSheilaAnimation(false);
   };
 
