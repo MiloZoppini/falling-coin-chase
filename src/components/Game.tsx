@@ -185,8 +185,14 @@ const Game: React.FC = () => {
   }, [isGameOver, isEjecting, isMobile]);
 
   useEffect(() => {
-    if (isGameOver || isPaused || isEjecting) return;
-
+    if (!playerName || isGameOver || isPaused) {
+      if (gameLoopRef.current) {
+        cancelAnimationFrame(gameLoopRef.current);
+        gameLoopRef.current = null;
+      }
+      return;
+    }
+    
     const gameLoop = (timestamp: number) => {
       const deltaTime = timestamp - lastFrameTimeRef.current;
       lastFrameTimeRef.current = timestamp;
@@ -233,7 +239,7 @@ const Game: React.FC = () => {
         cancelAnimationFrame(gameLoopRef.current);
       }
     };
-  }, [isGameOver, isPaused, gameWidth, gameHeight, score, currentLevel, toast, isEjecting]);
+  }, [isGameOver, isPaused, gameWidth, gameHeight, score, currentLevel, toast, isEjecting, playerName]);
 
   useEffect(() => {
     lastPlayerPositionsRef.current.push({ x: playerPosition.x, direction: playerDirection });
@@ -605,6 +611,18 @@ const Game: React.FC = () => {
     setPlayerName(name);
     setShowNameModal(false);
     
+    setScore(0);
+    setLives(3);
+    setFallingObjects([]);
+    setCurrentLevel(1);
+    setIsGameOver(false);
+    setIsInvincible(false);
+    setHasDoublePoints(false);
+    setIsHurt(false);
+    setIsEjecting(false);
+    setSavedScore(false);
+    lastPowerUpTime.current = 0;
+    
     toast({
       title: "Game Started!",
       description: `Good luck, ${name}! Catch the coins and avoid the obstacles!`,
@@ -635,156 +653,160 @@ const Game: React.FC = () => {
       }}
     >
       {showNameModal && (
-        <PlayerNameModal onSubmit={handleNameSubmit} highScores={highScores} />
+        <PlayerNameModal onSubmit={handleNameSubmit} />
       )}
       
-      <div 
-        ref={playerRef} 
-        className={`player ${isInvincible ? 'invincible' : ''} ${hasDoublePoints ? 'double-points' : ''} ${isWalking ? 'walking' : ''} ${isHurt ? 'hurt' : ''} ${isEjecting ? 'ejecting' : ''}`}
-        style={{ 
-          left: `${playerPosition.x}px`,
-          bottom: `100px`,
-          backgroundImage: isMuscleMartin 
-            ? `url('/images/MuscleMartin.png')`
-            : `url('/images/Martin.png')`,
-          backgroundSize: 'contain',
-          backgroundRepeat: 'no-repeat',
-          backgroundPosition: 'center',
-          transform: playerDirection === 'left' ? 'scaleX(-1)' : 'scaleX(1)',
-          transition: 'transform 0.2s ease-out',
-          width: isMuscleMartin ? '108px' : '72px',
-          height: '72px'
-        }}
-      ></div>
-      
-      <div 
-        ref={dogRef} 
-        className={`dog ${isDogWalking ? 'walking' : ''} ${isEjecting ? 'ejecting' : ''}`}
-        style={{ 
-          left: `${dogPosition.x}px`,
-          bottom: `100px`,
-          backgroundImage: `url('/images/Dog.png')`,
-          backgroundSize: 'contain',
-          backgroundRepeat: 'no-repeat',
-          backgroundPosition: 'center',
-          transform: dogPosition.direction === 'left' ? 'scaleX(-1)' : 'scaleX(1)',
-          width: '40px',
-          height: '40px'
-        }}
-      ></div>
-      
-      {fallingObjects.map((obj) => (
-        <div
-          key={obj.id}
-          className={
-            obj.type === 'coin' 
-              ? 'coin' 
-              : obj.type === 'obstacle' 
-                ? 'obstacle' 
-                : `powerup powerup-${obj.powerType}`
-          }
-          style={{
-            left: `${obj.x}px`,
-            top: `${obj.y}px`,
-            width: `${obj.width}px`,
-            height: `${obj.height}px`,
-            borderRadius: obj.type === 'coin' ? '50%' : obj.type === 'powerup' ? '0' : '0px',
-            backgroundImage: obj.type === 'coin' 
-              ? `url('/images/bitcoin.png')` 
-              : obj.type === 'powerup' 
-                ? `url('/images/lemon.webp')` 
-                : `url('/images/nuke.png')`,
-            backgroundSize: 'contain',
-            backgroundPosition: 'center',
-            backgroundRepeat: 'no-repeat',
-          }}
-        ></div>
-      ))}
-      
-      <div className="game-stats">
-        <div className="flex items-center mb-2">
-          <Coins className="mr-2" size={20} color="gold" />
-          <span>{score}</span>
-        </div>
-        <div className="flex items-center mb-2">
-          <span className="mr-2">Level: {currentLevel}</span>
-        </div>
-        <div className="flex items-center">
-          {Array.from({ length: lives }).map((_, i) => (
-            <Heart key={i} size={20} color="red" fill="red" className="mr-1" />
+      {playerName && (
+        <>
+          <div 
+            ref={playerRef} 
+            className={`player ${isInvincible ? 'invincible' : ''} ${hasDoublePoints ? 'double-points' : ''} ${isWalking ? 'walking' : ''} ${isHurt ? 'hurt' : ''} ${isEjecting ? 'ejecting' : ''}`}
+            style={{ 
+              left: `${playerPosition.x}px`,
+              bottom: `100px`,
+              backgroundImage: isMuscleMartin 
+                ? `url('/images/MuscleMartin.png')`
+                : `url('/images/Martin.png')`,
+              backgroundSize: 'contain',
+              backgroundRepeat: 'no-repeat',
+              backgroundPosition: 'center',
+              transform: playerDirection === 'left' ? 'scaleX(-1)' : 'scaleX(1)',
+              transition: 'transform 0.2s ease-out',
+              width: isMuscleMartin ? '108px' : '72px',
+              height: '72px'
+            }}
+          ></div>
+          
+          <div 
+            ref={dogRef} 
+            className={`dog ${isDogWalking ? 'walking' : ''} ${isEjecting ? 'ejecting' : ''}`}
+            style={{ 
+              left: `${dogPosition.x}px`,
+              bottom: `100px`,
+              backgroundImage: `url('/images/Dog.png')`,
+              backgroundSize: 'contain',
+              backgroundRepeat: 'no-repeat',
+              backgroundPosition: 'center',
+              transform: dogPosition.direction === 'left' ? 'scaleX(-1)' : 'scaleX(1)',
+              width: '40px',
+              height: '40px'
+            }}
+          ></div>
+          
+          {fallingObjects.map((obj) => (
+            <div
+              key={obj.id}
+              className={
+                obj.type === 'coin' 
+                  ? 'coin' 
+                  : obj.type === 'obstacle' 
+                    ? 'obstacle' 
+                    : `powerup powerup-${obj.powerType}`
+              }
+              style={{
+                left: `${obj.x}px`,
+                top: `${obj.y}px`,
+                width: `${obj.width}px`,
+                height: `${obj.height}px`,
+                borderRadius: obj.type === 'coin' ? '50%' : obj.type === 'powerup' ? '0' : '0px',
+                backgroundImage: obj.type === 'coin' 
+                  ? `url('/images/bitcoin.png')` 
+                  : obj.type === 'powerup' 
+                    ? `url('/images/lemon.webp')` 
+                    : `url('/images/nuke.png')`,
+                backgroundSize: 'contain',
+                backgroundPosition: 'center',
+                backgroundRepeat: 'no-repeat',
+              }}
+            ></div>
           ))}
-        </div>
-        <div className="flex items-center mt-2">
-          {isInvincible && (
-            <div className="flex items-center mr-2 text-yellow-400">
-              <Star size={16} className="mr-1" />
-              <span>Invincible</span>
+          
+          <div className="game-stats">
+            <div className="flex items-center mb-2">
+              <Coins className="mr-2" size={20} color="gold" />
+              <span>{score}</span>
+            </div>
+            <div className="flex items-center mb-2">
+              <span className="mr-2">Level: {currentLevel}</span>
+            </div>
+            <div className="flex items-center">
+              {Array.from({ length: lives }).map((_, i) => (
+                <Heart key={i} size={20} color="red" fill="red" className="mr-1" />
+              ))}
+            </div>
+            <div className="flex items-center mt-2">
+              {isInvincible && (
+                <div className="flex items-center mr-2 text-yellow-400">
+                  <Star size={16} className="mr-1" />
+                  <span>Invincible</span>
+                </div>
+              )}
+              {hasDoublePoints && (
+                <div className="flex items-center text-green-400">
+                  <Coins size={16} className="mr-1" />
+                  <span>2x Points</span>
+                </div>
+              )}
+            </div>
+            <div className="player-name mt-2">
+              <span>{playerName}</span>
+            </div>
+          </div>
+          
+          {!isMobile && (
+            <div className="mobile-controls">
+              <button 
+                className="control-button left-button"
+                onTouchStart={startMovingLeft}
+                onTouchEnd={stopMovingLeft}
+                onMouseDown={startMovingLeft}
+                onMouseUp={stopMovingLeft}
+                onMouseLeave={stopMovingLeft}
+              >
+                &larr;
+              </button>
+              <button 
+                className="control-button right-button"
+                onTouchStart={startMovingRight}
+                onTouchEnd={stopMovingRight}
+                onMouseDown={startMovingRight}
+                onMouseUp={stopMovingRight}
+                onMouseLeave={stopMovingRight}
+              >
+                &rarr;
+              </button>
             </div>
           )}
-          {hasDoublePoints && (
-            <div className="flex items-center text-green-400">
-              <Coins size={16} className="mr-1" />
-              <span>2x Points</span>
+          
+          {isMobile && (
+            <div className="touch-controls">
+              <div 
+                className="touch-area left-area"
+                style={{
+                  position: 'absolute',
+                  left: 0,
+                  bottom: 0,
+                  width: '50%',
+                  height: '100%',
+                  zIndex: 5,
+                  opacity: 0
+                }}
+              />
+              <div 
+                className="touch-area right-area"
+                style={{
+                  position: 'absolute',
+                  right: 0,
+                  bottom: 0,
+                  width: '50%',
+                  height: '100%',
+                  zIndex: 5,
+                  opacity: 0
+                }}
+              />
             </div>
           )}
-        </div>
-        <div className="player-name mt-2">
-          <span>{playerName}</span>
-        </div>
-      </div>
-      
-      {!isMobile && (
-        <div className="mobile-controls">
-          <button 
-            className="control-button left-button"
-            onTouchStart={startMovingLeft}
-            onTouchEnd={stopMovingLeft}
-            onMouseDown={startMovingLeft}
-            onMouseUp={stopMovingLeft}
-            onMouseLeave={stopMovingLeft}
-          >
-            &larr;
-          </button>
-          <button 
-            className="control-button right-button"
-            onTouchStart={startMovingRight}
-            onTouchEnd={stopMovingRight}
-            onMouseDown={startMovingRight}
-            onMouseUp={stopMovingRight}
-            onMouseLeave={stopMovingRight}
-          >
-            &rarr;
-          </button>
-        </div>
-      )}
-      
-      {isMobile && (
-        <div className="touch-controls">
-          <div 
-            className="touch-area left-area"
-            style={{
-              position: 'absolute',
-              left: 0,
-              bottom: 0,
-              width: '50%',
-              height: '100%',
-              zIndex: 5,
-              opacity: 0
-            }}
-          />
-          <div 
-            className="touch-area right-area"
-            style={{
-              position: 'absolute',
-              right: 0,
-              bottom: 0,
-              width: '50%',
-              height: '100%',
-              zIndex: 5,
-              opacity: 0
-            }}
-          />
-        </div>
+        </>
       )}
       
       <div className={`game-over ${isGameOver ? '' : 'hidden'}`}>
