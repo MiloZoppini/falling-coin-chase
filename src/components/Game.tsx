@@ -86,6 +86,7 @@ const Game: React.FC = () => {
   const [isWalking, setIsWalking] = useState<boolean>(false);
   const [isDogWalking, setIsDogWalking] = useState<boolean>(false);
   const [isEjecting, setIsEjecting] = useState<boolean>(false);
+  const [isVodkaActive, setIsVodkaActive] = useState<boolean>(false);
   
   const keysPressed = useRef<{left: boolean, right: boolean}>({
     left: false,
@@ -722,10 +723,12 @@ const Game: React.FC = () => {
     
     setAreControlsReversed(true);
     setControlsReversedTimeLeft(vodkaDuration);
+    setIsVodkaActive(true);
     
     controlsReversedTimeoutRef.current = window.setTimeout(() => {
       setAreControlsReversed(false);
       setControlsReversedTimeLeft(0);
+      setIsVodkaActive(false);
       controlsReversedTimeoutRef.current = null;
     }, vodkaDuration * 1000);
   };
@@ -913,9 +916,11 @@ const Game: React.FC = () => {
             style={{ 
               left: `${playerPosition.x}px`,
               bottom: `100px`,
-              backgroundImage: isMuscleMartin 
-                ? `url('/images/MuscleMartin.png')`
-                : `url('/images/Martin.png')`,
+              backgroundImage: isVodkaActive 
+                ? `url('/images/martin_vodka.png')`
+                : isMuscleMartin 
+                  ? `url('/images/MuscleMartin.png')`
+                  : `url('/images/Martin.png')`,
               backgroundSize: 'contain',
               backgroundRepeat: 'no-repeat',
               backgroundPosition: 'center',
