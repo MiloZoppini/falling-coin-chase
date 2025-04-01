@@ -369,7 +369,7 @@ const Game: React.FC = () => {
             
             hurtTimeoutRef.current = window.setTimeout(() => {
               setIsHurt(false);
-            }, 1500);
+            }, 900);
           }
           
           if (newLives <= 0) {
