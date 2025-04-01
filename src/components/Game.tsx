@@ -1,9 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
-import { Coins, Heart, Star, Trophy } from 'lucide-react';
+import { Coins, Heart, Star, Trophy, Medal } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import PlayerNameModal from './PlayerNameModal';
 import { getHighScores, saveHighScore, HighScore } from '@/services/supabaseService';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 // Game objects interfaces
 interface GameObject {
@@ -579,6 +587,15 @@ const Game: React.FC = () => {
     });
   };
 
+  const getMedalColor = (position: number): string => {
+    switch (position) {
+      case 0: return "gold";
+      case 1: return "silver";
+      case 2: return "#CD7F32"; // bronze
+      default: return "currentColor";
+    }
+  };
+
   return (
     <div 
       ref={gameContainerRef} 
@@ -724,26 +741,30 @@ const Game: React.FC = () => {
           <div className="mb-6">
             <div className="flex items-center gap-2 mb-3 justify-center">
               <Trophy size={20} />
-              <h3 className="text-xl font-bold">High Scores</h3>
+              <h3 className="text-xl font-bold">Leaderboard</h3>
             </div>
-            <div className="max-h-40 overflow-y-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left py-2">Player</th>
-                    <th className="text-right py-2">Score</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {highScores.slice(0, 5).map((entry, index) => (
-                    <tr key={index} className="border-b border-gray-700">
-                      <td className="py-2">{entry.playerName}</td>
-                      <td className="text-right py-2">{entry.score}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-12">Rank</TableHead>
+                  <TableHead>Player</TableHead>
+                  <TableHead className="text-right">Score</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {highScores.slice(0, 3).map((entry, index) => (
+                  <TableRow key={index}>
+                    <TableCell>
+                      <div className="flex items-center">
+                        <Medal size={18} color={getMedalColor(index)} fill={getMedalColor(index)} />
+                      </div>
+                    </TableCell>
+                    <TableCell>{entry.playerName}</TableCell>
+                    <TableCell className="text-right">{entry.score}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </div>
         )}
         
