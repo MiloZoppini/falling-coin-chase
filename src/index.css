@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -64,6 +65,7 @@
     position: absolute;
     width: 40px;
     height: 40px;
+    background-color: hsl(var(--player-color));
     border-radius: 50%;
     bottom: 100px;
     left: 50%;
@@ -85,6 +87,7 @@
     position: absolute;
     width: 30px;
     height: 30px;
+    background-color: hsl(var(--coin-color));
     border-radius: 50%;
     z-index: 5;
   }
@@ -93,6 +96,7 @@
     position: absolute;
     width: 40px;
     height: 40px;
+    background-color: hsl(var(--obstacle-color));
     z-index: 5;
   }
   
@@ -104,6 +108,18 @@
     border-radius: 50%;
     z-index: 5;
     animation: spin 2s linear infinite;
+  }
+  
+  .powerup-invincibility {
+    background-color: hsl(var(--powerup-invincibility));
+  }
+  
+  .powerup-extraLife {
+    background-color: hsl(var(--powerup-extraLife));
+  }
+  
+  .powerup-doublePoints {
+    background-color: hsl(var(--powerup-doublePoints));
   }
   
   /* Animazioni */
