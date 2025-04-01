@@ -382,6 +382,26 @@
     background-color: transparent !important;
   }
   
+  .poop {
+    position: absolute;
+    width: 36px;
+    height: 36px;
+    z-index: 5;
+    background-color: transparent !important;
+    animation: poop-drop 0.5s ease-out;
+  }
+  
+  @keyframes poop-drop {
+    0% { 
+      transform: scale(0.5);
+      opacity: 0;
+    }
+    100% { 
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+  
   .pulsing-heart {
     animation: heart-pulse 0.8s infinite alternate;
   }

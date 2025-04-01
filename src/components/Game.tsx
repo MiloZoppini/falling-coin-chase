@@ -44,12 +44,16 @@ interface VodkaObject extends GameObject {
   type: 'vodka';
 }
 
-type FallingObject = CoinObject | ObstacleObject | PowerUpObject | HeartObject | VodkaObject;
+interface PoopObject extends GameObject {
+  type: 'poop';
+}
+
+type FallingObject = CoinObject | ObstacleObject | PowerUpObject | HeartObject | VodkaObject | PoopObject;
 
 const GAME_LEVELS = {
-  1: { speed: 0.2, spawnRate: 0.02, obstacleRate: 0.3, powerUpChance: 0.02, heartChance: 0.5, vodkaChance: 0.02 },
-  2: { speed: 0.3, spawnRate: 0.03, obstacleRate: 0.4, powerUpChance: 0.015, heartChance: 0.5, vodkaChance: 0.025 },
-  3: { speed: 0.4, spawnRate: 0.04, obstacleRate: 0.5, powerUpChance: 0.01, heartChance: 0.5, vodkaChance: 0.03 }
+  1: { speed: 0.2, spawnRate: 0.02, obstacleRate: 0.3, powerUpChance: 0.02, heartChance: 0.5, vodkaChance: 0.02, poopChance: 0.8 },
+  2: { speed: 0.3, spawnRate: 0.03, obstacleRate: 0.4, powerUpChance: 0.015, heartChance: 0.5, vodkaChance: 0.025, poopChance: 0.8 },
+  3: { speed: 0.4, spawnRate: 0.04, obstacleRate: 0.5, powerUpChance: 0.01, heartChance: 0.5, vodkaChance: 0.03, poopChance: 0.8 }
 };
 
 const COIN_TYPES = {
@@ -57,6 +61,8 @@ const COIN_TYPES = {
   moneycash: { imagePath: '/images/moneycash.png', pointValue: 100, width: 36, height: 24, probability: 0.35 },
   saccosoldi: { imagePath: '/images/saccosoldi.png', pointValue: 200, width: 36, height: 36, probability: 0.25 }
 };
+
+const POOP_POINT_VALUE = 150;
 
 const Game: React.FC = () => {
   const isMobile = useIsMobile();
@@ -97,6 +103,7 @@ const Game: React.FC = () => {
   const lastPowerUpTime = useRef<number>(0);
   const lastHeartSpawnTime = useRef<number>(0);
   const lastVodkaSpawnTime = useRef<number>(0);
+  const lastPoopTime = useRef<number>(0);
 
   const [isMuscleMartin, setIsMuscleMartin] = useState<boolean>(false);
   const [isHurt, setIsHurt] = useState<boolean>(false);
@@ -273,6 +280,12 @@ const Game: React.FC = () => {
         createVodka();
         lastVodkaSpawnTime.current = now;
       }
+      
+      const timeSinceLastPoop = now - lastPoopTime.current;
+      if (timeSinceLastPoop > 5000 && Math.random() < levelSettings.poopChance * deltaTime * 0.01 && isDogWalking) {
+        createPoop();
+        lastPoopTime.current = now;
+      }
 
       updateFallingObjects(deltaTime);
       checkCollisions();
@@ -324,7 +337,7 @@ const Game: React.FC = () => {
         cancelAnimationFrame(gameLoopRef.current);
       }
     };
-  }, [isGameOver, isPaused, gameWidth, gameHeight, score, currentLevel, isEjecting, playerName, isInvincible, areControlsReversed]);
+  }, [isGameOver, isPaused, gameWidth, gameHeight, score, currentLevel, isEjecting, playerName, isInvincible, areControlsReversed, isDogWalking]);
 
   useEffect(() => {
     lastPlayerPositionsRef.current.push({ x: playerPosition.x, direction: playerDirection });
@@ -509,6 +522,33 @@ const Game: React.FC = () => {
     setFallingObjects(prev => [...prev, newVodka]);
   };
 
+  const createPoop = () => {
+    if (!gameWidth || !dogRef.current) return;
+    
+    const dogRect = dogRef.current.getBoundingClientRect();
+    const id = Date.now() + Math.random();
+    const width = 36;
+    const height = 36;
+    
+    const x = dogPosition.x + (dogRef.current.offsetWidth / 2) - (width / 2);
+    const y = dogRect.bottom - 100;
+    
+    const levelSettings = GAME_LEVELS[currentLevel as keyof typeof GAME_LEVELS];
+    const speed = levelSettings.speed * 0.65;
+
+    const newPoop: PoopObject = {
+      id,
+      x,
+      y,
+      width,
+      height,
+      speed,
+      type: 'poop'
+    };
+    
+    setFallingObjects(prev => [...prev, newPoop]);
+  };
+
   const updateFallingObjects = (deltaTime: number) => {
     setFallingObjects(prev => 
       prev
@@ -547,6 +587,7 @@ const Game: React.FC = () => {
       let powerupType: PowerUpObject['powerType'] | null = null;
       let heartCollected = false;
       let vodkaCollected = false;
+      let poopCollected = false;
 
       for (const obj of prev) {
         const objectRect = {
@@ -577,6 +618,10 @@ const Game: React.FC = () => {
             heartCollected = true;
           } else if (obj.type === 'vodka') {
             vodkaCollected = true;
+          } else if (obj.type === 'poop') {
+            poopCollected = true;
+            const poopPoints = hasDoublePoints ? POOP_POINT_VALUE * 2 : POOP_POINT_VALUE;
+            scoreIncrement += poopPoints;
           }
         } else {
           remaining.push(obj);
@@ -909,7 +954,9 @@ const Game: React.FC = () => {
                       ? 'heart pulsing-heart'
                       : obj.type === 'vodka'
                         ? 'vodka'
-                        : `powerup powerup-${(obj as PowerUpObject).powerType}`
+                        : obj.type === 'poop'
+                          ? 'poop'
+                          : `powerup powerup-${(obj as PowerUpObject).powerType}`
               }
               style={{
                 left: `${obj.x}px`,
@@ -925,7 +972,9 @@ const Game: React.FC = () => {
                       ? `url('/images/heart.png')`
                       : obj.type === 'vodka'
                         ? `url('/images/vodka.webp')`
-                        : `url('/images/nuke.png')`,
+                        : obj.type === 'poop'
+                          ? `url('/images/shit.png')`
+                          : `url('/images/nuke.png')`,
                 backgroundSize: 'contain',
                 backgroundRepeat: 'no-repeat',
                 backgroundPosition: 'center'
