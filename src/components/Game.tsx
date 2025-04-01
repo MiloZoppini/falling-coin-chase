@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Coins, Heart, Star } from 'lucide-react';
@@ -28,11 +29,11 @@ interface PowerUpObject extends GameObject {
 
 type FallingObject = CoinObject | ObstacleObject | PowerUpObject;
 
-// Livelli di gioco
+// Game levels
 const GAME_LEVELS = {
-  1: { speed: 0.2, spawnRate: 0.02, obstacleRate: 0.3, powerUpChance: 0.05 },
-  2: { speed: 0.3, spawnRate: 0.03, obstacleRate: 0.35, powerUpChance: 0.1 },
-  3: { speed: 0.4, spawnRate: 0.04, obstacleRate: 0.4, powerUpChance: 0.15 }
+  1: { speed: 0.2, spawnRate: 0.02, obstacleRate: 0.3, powerUpChance: 0.02 },
+  2: { speed: 0.3, spawnRate: 0.03, obstacleRate: 0.4, powerUpChance: 0.015 },
+  3: { speed: 0.4, spawnRate: 0.04, obstacleRate: 0.5, powerUpChance: 0.01 }
 };
 
 const Game: React.FC = () => {
@@ -63,6 +64,7 @@ const Game: React.FC = () => {
   const [hasDoublePoints, setHasDoublePoints] = useState<boolean>(false);
   const invincibilityTimeoutRef = useRef<number | null>(null);
   const doublePointsTimeoutRef = useRef<number | null>(null);
+  const lastPowerUpTime = useRef<number>(0);
 
   useEffect(() => {
     const handleResize = () => {
@@ -149,19 +151,24 @@ const Game: React.FC = () => {
 
       const levelSettings = GAME_LEVELS[currentLevel as keyof typeof GAME_LEVELS];
       
+      // Spawn objects based on level settings and time passed
       if (Math.random() < levelSettings.spawnRate * deltaTime * 0.1) {
         createFallingObject();
       }
 
-      if (Math.random() < levelSettings.powerUpChance * deltaTime * 0.01) {
+      // Power-ups should be rare (and with a minimum time between them)
+      const now = Date.now();
+      const timeSinceLastPowerUp = now - lastPowerUpTime.current;
+      if (timeSinceLastPowerUp > 15000 && Math.random() < levelSettings.powerUpChance * deltaTime * 0.01) {
         createPowerUp();
+        lastPowerUpTime.current = now;
       }
 
       updateFallingObjects(deltaTime);
-
       checkCollisions();
 
-      const newLevel = Math.min(3, Math.floor(score / 1000) + 1);
+      // Progress level based on score
+      const newLevel = Math.min(3, Math.floor(score / 1500) + 1);
       if (newLevel !== currentLevel) {
         setCurrentLevel(newLevel);
         toast({
@@ -231,8 +238,18 @@ const Game: React.FC = () => {
     const levelSettings = GAME_LEVELS[currentLevel as keyof typeof GAME_LEVELS];
     const speed = levelSettings.speed * 0.8;
 
-    const powerTypes: Array<PowerUpObject['powerType']> = ['invincibility', 'extraLife', 'doublePoints'];
-    const powerType = powerTypes[Math.floor(Math.random() * powerTypes.length)];
+    // Weight the power-ups so extraLife is rarer
+    const powerTypes: Array<PowerUpObject['powerType']> = [];
+    
+    // 10% chance for extra life
+    if (Math.random() < 0.1) {
+      powerTypes.push('extraLife');
+    } else {
+      // 50% chance for each of the other power-ups
+      powerTypes.push(Math.random() < 0.5 ? 'invincibility' : 'doublePoints');
+    }
+    
+    const powerType = powerTypes[0];
 
     const newPowerUp: PowerUpObject = {
       id,
@@ -361,7 +378,8 @@ const Game: React.FC = () => {
         
       case 'extraLife':
         setLives(l => {
-          const newLives = l + 1;
+          // Cap maximum lives at 5
+          const newLives = Math.min(5, l + 1);
           toast({
             title: "Extra Life!",
             description: `You now have ${newLives} lives!`,
@@ -374,20 +392,21 @@ const Game: React.FC = () => {
         setHasDoublePoints(true);
         toast({
           title: "Double Points!",
-          description: "Points are doubled for 10 seconds!",
+          description: "Points are doubled for 8 seconds!",
         });
         
         if (doublePointsTimeoutRef.current) {
           clearTimeout(doublePointsTimeoutRef.current);
         }
         
+        // Reduce double points duration to 8 seconds
         doublePointsTimeoutRef.current = window.setTimeout(() => {
           setHasDoublePoints(false);
           toast({
             title: "Double Points ended!",
             description: "Back to normal points.",
           });
-        }, 10000);
+        }, 8000);
         break;
     }
   };
@@ -439,6 +458,7 @@ const Game: React.FC = () => {
     setIsGameOver(false);
     setIsInvincible(false);
     setHasDoublePoints(false);
+    lastPowerUpTime.current = 0;
     
     if (invincibilityTimeoutRef.current) {
       clearTimeout(invincibilityTimeoutRef.current);
