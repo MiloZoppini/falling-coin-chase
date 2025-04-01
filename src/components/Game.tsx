@@ -48,7 +48,6 @@ interface PoopObject extends GameObject {
   type: 'poop';
   createdAt: number;
   onGround: boolean;
-  opacity: number;
 }
 
 type FallingObject = CoinObject | ObstacleObject | PowerUpObject | HeartObject | VodkaObject | PoopObject;
@@ -66,8 +65,9 @@ const COIN_TYPES = {
 };
 
 const POOP_POINT_VALUE = 150;
-const POOP_GROUND_DURATION = 5000; // 5 seconds in milliseconds
-const POOP_FADE_DURATION = 1000; // 1 second fade out
+const POOP_WIDTH = 29;
+const POOP_HEIGHT = 29;
+const AUTO_POOP_INTERVAL = 10000;
 
 const Game: React.FC = () => {
   const isMobile = useIsMobile();
@@ -110,6 +110,7 @@ const Game: React.FC = () => {
   const lastHeartSpawnTime = useRef<number>(0);
   const lastVodkaSpawnTime = useRef<number>(0);
   const lastPoopTime = useRef<number>(0);
+  const lastAutoPoopTime = useRef<number>(Date.now());
 
   const [isMuscleMartin, setIsMuscleMartin] = useState<boolean>(false);
   const [isHurt, setIsHurt] = useState<boolean>(false);
@@ -291,6 +292,12 @@ const Game: React.FC = () => {
       if (timeSinceLastPoop > 5000 && Math.random() < levelSettings.poopChance * deltaTime * 0.01 && isDogWalking) {
         createPoop();
         lastPoopTime.current = now;
+      }
+      
+      const timeSinceLastAutoPoop = now - lastAutoPoopTime.current;
+      if (timeSinceLastAutoPoop > AUTO_POOP_INTERVAL) {
+        createPoop();
+        lastAutoPoopTime.current = now;
       }
 
       updateFallingObjects(deltaTime);
@@ -534,8 +541,8 @@ const Game: React.FC = () => {
     
     const dogRect = dogRef.current.getBoundingClientRect();
     const id = Date.now() + Math.random();
-    const width = 36;
-    const height = 36;
+    const width = POOP_WIDTH;
+    const height = POOP_HEIGHT;
     
     const x = dogPosition.x + (dogRef.current.offsetWidth / 2) - (width / 2);
     const y = dogRect.bottom - 100;
@@ -552,8 +559,7 @@ const Game: React.FC = () => {
       speed,
       type: 'poop',
       createdAt: Date.now(),
-      onGround: false,
-      opacity: 1
+      onGround: false
     };
     
     setFallingObjects(prev => [...prev, newPoop]);
@@ -569,15 +575,6 @@ const Game: React.FC = () => {
             const poop = obj as PoopObject;
             
             if (poop.onGround) {
-              const timeOnGround = now - poop.createdAt;
-              
-              if (timeOnGround > POOP_GROUND_DURATION) {
-                const fadeProgress = Math.min(1, (timeOnGround - POOP_GROUND_DURATION) / POOP_FADE_DURATION);
-                return {
-                  ...poop,
-                  opacity: 1 - fadeProgress
-                };
-              }
               return poop;
             }
             
@@ -598,8 +595,7 @@ const Game: React.FC = () => {
         })
         .filter(obj => {
           if (obj.type === 'poop' && (obj as PoopObject).onGround) {
-            const timeOnGround = now - (obj as PoopObject).createdAt;
-            return timeOnGround < (POOP_GROUND_DURATION + POOP_FADE_DURATION);
+            return true;
           }
           return obj.y < (gameHeight + obj.height);
         })
@@ -1027,8 +1023,7 @@ const Game: React.FC = () => {
                           : `url('/images/nuke.png')`,
                 backgroundSize: 'contain',
                 backgroundRepeat: 'no-repeat',
-                backgroundPosition: 'center',
-                opacity: obj.type === 'poop' ? (obj as PoopObject).opacity : 1
+                backgroundPosition: 'center'
               }}
             ></div>
           ))}
