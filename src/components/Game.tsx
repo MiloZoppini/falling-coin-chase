@@ -477,7 +477,7 @@ const Game: React.FC = () => {
     const newHeart: HeartObject = {
       id,
       x,
-      y: -30, // Start above the screen
+      y: -30,
       width,
       height,
       speed,
@@ -517,7 +517,7 @@ const Game: React.FC = () => {
           ...obj,
           y: obj.y + obj.speed * deltaTime
         }))
-        .filter(obj => obj.y < (gameHeight + 50)) // Increased height threshold to ensure objects fully leave the screen
+        .filter(obj => obj.y < (gameHeight + 50))
     );
   };
 
@@ -554,7 +554,6 @@ const Game: React.FC = () => {
       let vodkaCollected = false;
 
       for (const obj of prev) {
-        // Calculate object position relative to game container
         const objectRect = {
           left: obj.x,
           top: obj.y,
@@ -629,7 +628,7 @@ const Game: React.FC = () => {
       }
       
       if (heartCollected) {
-        setLives(l => Math.min(l + 1, 5)); // Maximum 5 lives
+        setLives(l => Math.min(l + 1, 5));
       }
       
       if (powerupCollected && powerupType) {
@@ -646,7 +645,7 @@ const Game: React.FC = () => {
 
   const handlePowerUp = (powerType: PowerUpObject['powerType']) => {
     if (powerType === 'invincibility') {
-      const invincibilityDuration = 5; // 5 seconds
+      const invincibilityDuration = 5;
       
       if (invincibilityTimeoutRef.current) {
         clearTimeout(invincibilityTimeoutRef.current);
@@ -675,7 +674,7 @@ const Game: React.FC = () => {
   };
   
   const handleVodkaEffect = () => {
-    const vodkaDuration = 8; // 8 seconds of reversed controls
+    const vodkaDuration = 8;
     
     if (controlsReversedTimeoutRef.current) {
       clearTimeout(controlsReversedTimeoutRef.current);
@@ -925,6 +924,114 @@ const Game: React.FC = () => {
                 backgroundColor: 'transparent',
                 backgroundImage: obj.type === 'coin' 
                   ? `url('${COIN_TYPES[(obj as CoinObject).coinType].imagePath}')` 
-                  : obj.type === 'powerup' 
-                    ? `url('/images/lemon.webp')` 
-                    : obj.type === '
+                  : obj.type === 'obstacle' 
+                    ? `url('/images/nuke.png')` 
+                    : obj.type === 'powerup' 
+                      ? `url('/images/lemon.webp')` 
+                      : obj.type === 'heart'
+                        ? `url('/images/heart.png')`
+                        : obj.type === 'vodka'
+                          ? `url('/images/vodka.webp')`
+                          : ''
+              }}
+            />
+          ))}
+          
+          <div className="status-bar">
+            <div className="lives">
+              {Array.from({ length: lives }).map((_, i) => (
+                <div key={i} className="life"></div>
+              ))}
+            </div>
+            <div className="score">
+              Score: {score}
+            </div>
+            <div className="level">
+              Level: {currentLevel}
+            </div>
+          </div>
+          
+          {isInvincible && (
+            <div className="power-timer invincibility-timer">
+              <div className="power-icon">💪</div>
+              <div className="power-time">{invincibilityTimeLeft.toFixed(1)}s</div>
+            </div>
+          )}
+          
+          {areControlsReversed && (
+            <div className="power-timer vodka-timer">
+              <div className="power-icon">🍸</div>
+              <div className="power-time">{controlsReversedTimeLeft.toFixed(1)}s</div>
+            </div>
+          )}
+          
+          {isMobile && (
+            <div className="mobile-controls">
+              <button
+                className="control-button left-button"
+                onTouchStart={startMovingLeft}
+                onTouchEnd={stopMovingLeft}
+              >
+                ◀
+              </button>
+              <button
+                className="control-button right-button"
+                onTouchStart={startMovingRight}
+                onTouchEnd={stopMovingRight}
+              >
+                ▶
+              </button>
+            </div>
+          )}
+          
+          {isGameOver && (
+            <div className="game-over">
+              <h2>Game Over</h2>
+              <div className="final-score">
+                <Coins className="icon" />
+                <span>{score}</span>
+              </div>
+              
+              <div className="high-scores">
+                <h3>High Scores</h3>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-12">Rank</TableHead>
+                      <TableHead>Player</TableHead>
+                      <TableHead className="text-right">Score</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {highScores.slice(0, 5).map((highScore, index) => (
+                      <TableRow key={index}>
+                        <TableCell>
+                          {index < 3 ? (
+                            <Medal fill={getMedalColor(index)} color={getMedalColor(index)} />
+                          ) : (
+                            index + 1
+                          )}
+                        </TableCell>
+                        <TableCell>{highScore.player_name}</TableCell>
+                        <TableCell className="text-right">{highScore.score}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+              
+              <Button 
+                className="play-again-button"
+                onClick={resetGame}
+              >
+                Play Again
+              </Button>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+};
+
+export default Game;
