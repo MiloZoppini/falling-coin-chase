@@ -552,7 +552,9 @@ const Game: React.FC = () => {
           backgroundRepeat: 'no-repeat',
           backgroundPosition: 'center',
           transform: playerDirection === 'left' ? 'scaleX(-1)' : 'scaleX(1)',
-          transition: 'transform 0.2s ease-out'
+          transition: 'transform 0.2s ease-out',
+          width: '72px',
+          height: '72px'
         }}
       ></div>
       
