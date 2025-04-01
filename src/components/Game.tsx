@@ -381,22 +381,20 @@ const Game: React.FC = () => {
             keysPressed.current.right = false;
             setIsWalking(false);
             
+            setIsGameOver(true);
+            
             setTimeout(() => {
-              setIsGameOver(true);
-              
-              setTimeout(() => {
-                const gameOverElement = document.querySelector('.game-over');
-                if (gameOverElement) {
-                  gameOverElement.classList.add('visible');
-                }
-              }, 200);
-              
-              toast({
-                title: "Game Over!",
-                description: `Final score: ${score}`,
-                variant: "destructive"
-              });
-            }, 2000);
+              const gameOverElement = document.querySelector('.game-over');
+              if (gameOverElement) {
+                gameOverElement.classList.add('visible');
+              }
+            }, 0);
+            
+            toast({
+              title: "Game Over!",
+              description: `Final score: ${score}`,
+              variant: "destructive"
+            });
           } else {
             toast({
               title: "Hit!",
