@@ -129,14 +129,16 @@ const SheilaAnimation: React.FC<SheilaAnimationProps> = ({
         }}
       />
 
-      {/* Add dynamic CSS for walking animation */}
-      <style jsx="true">{`
+      {/* Add dynamic CSS for walking animation - fixed the jsx attribute */}
+      <style>
+        {`
         @keyframes sheila-step {
           0% { transform: translateY(0px); }
           50% { transform: translateY(-3px); }
           100% { transform: translateY(0px); }
         }
-      `}</style>
+      `}
+      </style>
     </>
   );
 };
