@@ -271,7 +271,7 @@ const Game: React.FC = () => {
     if (!gameWidth) return;
     
     const id = Date.now() + Math.random();
-    const width = 30;
+    const width = 40;
     const x = Math.random() * (gameWidth - width);
     const levelSettings = GAME_LEVELS[currentLevel as keyof typeof GAME_LEVELS];
     const speed = levelSettings.speed * 0.8;
@@ -291,7 +291,7 @@ const Game: React.FC = () => {
       x,
       y: -30,
       width,
-      height: 30,
+      height: 40,
       speed,
       type: 'powerup',
       powerType
@@ -589,7 +589,11 @@ const Game: React.FC = () => {
             top: `${obj.y}px`,
             width: `${obj.width}px`,
             height: `${obj.height}px`,
-            borderRadius: obj.type === 'coin' || obj.type === 'powerup' ? '50%' : '0px'
+            borderRadius: obj.type === 'coin' ? '50%' : obj.type === 'powerup' ? '0' : '0px',
+            backgroundImage: obj.type === 'powerup' ? `url('/images/lemon.webp')` : 'none',
+            backgroundSize: 'contain',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat',
           }}
         ></div>
       ))}
