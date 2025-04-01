@@ -877,8 +877,6 @@ const Game: React.FC = () => {
     setIsHurt(false);
     setIsEjecting(false);
     setSavedScore(false);
-    setAreControlsReversed(false);
-    lastPowerUpTime.current = 0;
     
     const gameOverElement = document.querySelector('.game-over');
     if (gameOverElement) {
@@ -923,7 +921,7 @@ const Game: React.FC = () => {
     
     setTimeout(() => {
       setShowSheilaAnimation(true);
-    }, 1000);
+    }, 10000);
   };
 
   const getMedalColor = (position: number): string => {

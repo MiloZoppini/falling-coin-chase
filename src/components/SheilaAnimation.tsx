@@ -17,7 +17,7 @@ const SheilaAnimation: React.FC<SheilaAnimationProps> = ({
   const [walkFrame, setWalkFrame] = useState(0);
   const animationRef = useRef<number | null>(null);
   const lastFrameTimeRef = useRef<number>(0);
-  const ANIMATION_SPEED = 0.3; // increased from 0.15 to make it faster
+  const ANIMATION_SPEED = 0.35; // increased from 0.3 to make it even faster
 
   useEffect(() => {
     if (!isAnimating || gameWidth === 0) return;
@@ -36,19 +36,10 @@ const SheilaAnimation: React.FC<SheilaAnimationProps> = ({
       setPosition(prev => {
         const newX = prev.x + ANIMATION_SPEED * deltaTime;
         
-        // Update walk frame every 200ms for animation
-        if (timestamp % 200 < 20) {
+        // Update walk frame every 150ms for animation (faster walking animation)
+        if (timestamp % 150 < 20) {
           setWalkFrame(prev => (prev + 1) % 2);
         }
-        
-        // Log animation progress for debugging
-        console.log('Sheila animation in progress', {
-          progress: newX / gameWidth,
-          newX,
-          gameWidth,
-          walkFrame,
-          floorLevel
-        });
         
         // Check if animation is complete
         if (newX > gameWidth + 100) {
@@ -92,7 +83,8 @@ const SheilaAnimation: React.FC<SheilaAnimationProps> = ({
         backgroundRepeat: 'no-repeat',
         backgroundPosition: 'center',
         zIndex: 10,
-        transform: 'scaleX(1)' // Facing right
+        transform: `scaleX(1) translateY(${walkFrame * 3}px)`, // Add slight up/down movement for walking effect
+        transition: 'transform 0.1s ease-in-out'
       }}
     />
   );
