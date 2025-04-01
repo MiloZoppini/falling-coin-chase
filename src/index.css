@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -55,19 +56,6 @@
     overflow: hidden;
     background-color: hsl(var(--game-bg));
   }
-  
-  /* Camera shake animation */
-  .camera-shake {
-    animation: camera-shake 0.1s infinite;
-  }
-  
-  @keyframes camera-shake {
-    0% { transform: translate(0, 0) rotate(0deg); }
-    25% { transform: translate(-1px, 1px) rotate(-0.5deg); }
-    50% { transform: translate(1px, 1px) rotate(0.5deg); }
-    75% { transform: translate(1px, -1px) rotate(0.5deg); }
-    100% { transform: translate(-1px, -1px) rotate(-0.5deg); }
-  }
 
   .player {
     position: absolute;
@@ -77,39 +65,6 @@
     left: 50%;
     transform: translateX(-50%);
     z-index: 10;
-  }
-  
-  /* Muscle Martin effect */
-  .player.muscle-martin {
-    filter: drop-shadow(0 0 10px rgba(255, 0, 0, 0.7));
-    animation: muscle-pulse 1s infinite alternate;
-  }
-  
-  @keyframes muscle-pulse {
-    0% { 
-      filter: drop-shadow(0 0 5px rgba(255, 0, 0, 0.7)); 
-      transform: scale(1) scaleX(1);
-    }
-    100% { 
-      filter: drop-shadow(0 0 15px rgba(255, 0, 0, 0.7)); 
-      transform: scale(1.05) scaleX(1);
-    }
-  }
-  
-  /* Ensure muscle-martin effect works with direction flipping */
-  .player.muscle-martin[style*="scaleX(-1)"] {
-    animation: muscle-pulse-flipped 1s infinite alternate;
-  }
-  
-  @keyframes muscle-pulse-flipped {
-    0% { 
-      filter: drop-shadow(0 0 5px rgba(255, 0, 0, 0.7)); 
-      transform: scale(1) scaleX(-1);
-    }
-    100% { 
-      filter: drop-shadow(0 0 15px rgba(255, 0, 0, 0.7)); 
-      transform: scale(1.05) scaleX(-1);
-    }
   }
   
   /* Dog follower styles */
@@ -229,18 +184,6 @@
   
   .player.invincible.walking[style*="scaleX(-1)"] {
     animation: pulse 1s infinite alternate, player-walk-flipped 0.5s infinite;
-  }
-  
-  .player.invincible.muscle-martin {
-    animation: muscle-pulse 1s infinite alternate, pulse 1s infinite alternate;
-  }
-  
-  .player.invincible.muscle-martin.walking {
-    animation: muscle-pulse 1s infinite alternate, pulse 1s infinite alternate, player-walk 0.5s infinite;
-  }
-  
-  .player.invincible.muscle-martin.walking[style*="scaleX(-1)"] {
-    animation: muscle-pulse-flipped 1s infinite alternate, pulse 1s infinite alternate, player-walk-flipped 0.5s infinite;
   }
   
   .player.double-points {
