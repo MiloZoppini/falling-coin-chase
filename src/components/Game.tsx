@@ -72,6 +72,8 @@ const Game: React.FC = () => {
   const lastPowerUpTime = useRef<number>(0);
 
   const [isMuscleMartin, setIsMuscleMartin] = useState<boolean>(false);
+  const [isHurt, setIsHurt] = useState<boolean>(false);
+  const hurtTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
     const handleResize = () => {
@@ -357,6 +359,19 @@ const Game: React.FC = () => {
       if (lostLife) {
         setLives(l => {
           const newLives = l - 1;
+          
+          if (!isHurt) {
+            setIsHurt(true);
+            
+            if (hurtTimeoutRef.current) {
+              clearTimeout(hurtTimeoutRef.current);
+            }
+            
+            hurtTimeoutRef.current = window.setTimeout(() => {
+              setIsHurt(false);
+            }, 1000);
+          }
+          
           if (newLives <= 0) {
             setIsGameOver(true);
             toast({
@@ -392,7 +407,6 @@ const Game: React.FC = () => {
         description: "Martin transforms into MuscleMartin! Invincible for 5 seconds!",
       });
       
-      // Apply earthquake effect for the entire invincibility duration
       if (gameContainerRef.current) {
         gameContainerRef.current.classList.add('earthquake');
       }
@@ -405,7 +419,6 @@ const Game: React.FC = () => {
         setIsInvincible(false);
         setIsMuscleMartin(false);
         
-        // Remove earthquake effect when invincibility ends
         if (gameContainerRef.current) {
           gameContainerRef.current.classList.remove('earthquake');
         }
@@ -485,6 +498,7 @@ const Game: React.FC = () => {
     setIsGameOver(false);
     setIsInvincible(false);
     setHasDoublePoints(false);
+    setIsHurt(false);
     lastPowerUpTime.current = 0;
     
     if (invincibilityTimeoutRef.current) {
@@ -493,6 +507,10 @@ const Game: React.FC = () => {
     
     if (doublePointsTimeoutRef.current) {
       clearTimeout(doublePointsTimeoutRef.current);
+    }
+    
+    if (hurtTimeoutRef.current) {
+      clearTimeout(hurtTimeoutRef.current);
     }
     
     toast({
@@ -517,7 +535,7 @@ const Game: React.FC = () => {
     >
       <div 
         ref={playerRef} 
-        className={`player ${isInvincible ? 'invincible' : ''} ${hasDoublePoints ? 'double-points' : ''} ${isWalking ? 'walking' : ''}`}
+        className={`player ${isInvincible ? 'invincible' : ''} ${hasDoublePoints ? 'double-points' : ''} ${isWalking ? 'walking' : ''} ${isHurt ? 'hurt' : ''}`}
         style={{ 
           left: `${playerPosition.x}px`,
           bottom: `100px`,
