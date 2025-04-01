@@ -17,7 +17,7 @@ const SheilaAnimation: React.FC<SheilaAnimationProps> = ({
   const [walkFrame, setWalkFrame] = useState(0);
   const animationRef = useRef<number | null>(null);
   const lastFrameTimeRef = useRef<number>(0);
-  const ANIMATION_SPEED = 0.15; // pixels per millisecond
+  const ANIMATION_SPEED = 0.3; // increased from 0.15 to make it faster
 
   useEffect(() => {
     if (!isAnimating || gameWidth === 0) return;
@@ -80,7 +80,7 @@ const SheilaAnimation: React.FC<SheilaAnimationProps> = ({
 
   return (
     <div
-      className="sheila-character"
+      className="sheila-character walking"
       style={{
         position: 'absolute',
         left: `${position.x}px`,
