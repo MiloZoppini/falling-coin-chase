@@ -389,7 +389,7 @@ const Game: React.FC = () => {
                 if (gameOverElement) {
                   gameOverElement.classList.add('visible');
                 }
-              }, 1500);
+              }, 200);
               
               toast({
                 title: "Game Over!",
