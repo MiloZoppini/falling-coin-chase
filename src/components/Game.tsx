@@ -1,63 +1,48 @@
+
 import React, { useState, useEffect, useRef } from 'react';
-import { Button } from "@/components/ui/button";
-import { Coins, Heart, Star } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
-
-// Game objects interfaces
-interface GameObject {
-  id: number;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  speed: number;
-}
-
-interface CoinObject extends GameObject {
-  type: 'coin';
-}
-
-interface ObstacleObject extends GameObject {
-  type: 'obstacle';
-}
-
-interface PowerUpObject extends GameObject {
-  type: 'powerup';
-  powerType: 'invincibility' | 'extraLife' | 'doublePoints';
-}
-
-type FallingObject = CoinObject | ObstacleObject | PowerUpObject;
-
-// Game levels
-const GAME_LEVELS = {
-  1: { speed: 0.2, spawnRate: 0.02, obstacleRate: 0.3, powerUpChance: 0.02 },
-  2: { speed: 0.3, spawnRate: 0.03, obstacleRate: 0.4, powerUpChance: 0.015 },
-  3: { speed: 0.4, spawnRate: 0.04, obstacleRate: 0.5, powerUpChance: 0.01 }
-};
+import Player from './Player';
+import Dog from './Dog';
+import FallingObject from './FallingObject';
+import GameStats from './GameStats';
+import MobileControls from './MobileControls';
+import GameOver from './GameOver';
+import { usePowerUps } from '../hooks/usePowerUps';
+import { 
+  FallingObject as FallingObjectType, 
+  GAME_LEVELS, 
+  PlayerPosition, 
+  DogPosition,
+  Direction
+} from '../types/game';
+import { 
+  createFallingObject, 
+  createPowerUp, 
+  updateFallingObjects, 
+  checkCollision 
+} from '../utils/gameUtils';
 
 const Game: React.FC = () => {
   const { toast } = useToast();
   const gameContainerRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<HTMLDivElement>(null);
-  const dogRef = useRef<HTMLDivElement>(null);
   const gameLoopRef = useRef<number | null>(null);
   const touchStartXRef = useRef<number | null>(null);
   const lastFrameTimeRef = useRef<number>(0);
-  const lastPlayerPositionsRef = useRef<Array<{x: number, direction: 'left' | 'right'}>>([]);
+  const lastPlayerPositionsRef = useRef<Array<{x: number, direction: Direction}>>([]);
   const [gameWidth, setGameWidth] = useState<number>(0);
   const [gameHeight, setGameHeight] = useState<number>(0);
   const [score, setScore] = useState<number>(0);
   const [lives, setLives] = useState<number>(3);
   const [isGameOver, setIsGameOver] = useState<boolean>(false);
-  const [playerPosition, setPlayerPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
-  const [dogPosition, setDogPosition] = useState<{ x: number; direction: 'left' | 'right' }>({ x: 0, direction: 'right' });
-  const [fallingObjects, setFallingObjects] = useState<FallingObject[]>([]);
+  const [playerPosition, setPlayerPosition] = useState<PlayerPosition>({ x: 0, y: 0 });
+  const [dogPosition, setDogPosition] = useState<DogPosition>({ x: 0, direction: 'right' });
+  const [fallingObjects, setFallingObjects] = useState<FallingObjectType[]>([]);
   const [isPaused, setIsPaused] = useState<boolean>(false);
-  const [playerDirection, setPlayerDirection] = useState<'left' | 'right'>('right');
+  const [playerDirection, setPlayerDirection] = useState<Direction>('right');
   const [isWalking, setIsWalking] = useState<boolean>(false);
   const [isDogWalking, setIsDogWalking] = useState<boolean>(false);
-  const [isMuscleMartin, setIsMuscleMartin] = useState<boolean>(false);
-  const [cameraShake, setCameraShake] = useState<boolean>(false);
+  const [currentLevel, setCurrentLevel] = useState<number>(1);
   
   const keysPressed = useRef<{left: boolean, right: boolean}>({
     left: false,
@@ -66,13 +51,18 @@ const Game: React.FC = () => {
   
   const playerSpeed = 5;
   
-  const [currentLevel, setCurrentLevel] = useState<number>(1);
-  const [isInvincible, setIsInvincible] = useState<boolean>(false);
-  const [hasDoublePoints, setHasDoublePoints] = useState<boolean>(false);
-  const invincibilityTimeoutRef = useRef<number | null>(null);
-  const doublePointsTimeoutRef = useRef<number | null>(null);
-  const lastPowerUpTime = useRef<number>(0);
+  const { 
+    isInvincible, 
+    hasDoublePoints, 
+    isMuscleMartin, 
+    cameraShake, 
+    lastPowerUpTime,
+    handlePowerUp, 
+    cleanupPowerUps,
+    resetPowerUps
+  } = usePowerUps();
 
+  // Initialize the game
   useEffect(() => {
     const handleResize = () => {
       if (gameContainerRef.current) {
@@ -105,15 +95,11 @@ const Game: React.FC = () => {
       if (gameLoopRef.current) {
         cancelAnimationFrame(gameLoopRef.current);
       }
-      if (invincibilityTimeoutRef.current) {
-        clearTimeout(invincibilityTimeoutRef.current);
-      }
-      if (doublePointsTimeoutRef.current) {
-        clearTimeout(doublePointsTimeoutRef.current);
-      }
+      cleanupPowerUps();
     };
-  }, [toast]);
+  }, [toast, cleanupPowerUps]);
 
+  // Handle keyboard controls
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (isGameOver) return;
@@ -148,6 +134,7 @@ const Game: React.FC = () => {
     };
   }, [isGameOver]);
 
+  // Main game loop
   useEffect(() => {
     if (isGameOver || isPaused) return;
 
@@ -165,17 +152,17 @@ const Game: React.FC = () => {
       const levelSettings = GAME_LEVELS[currentLevel as keyof typeof GAME_LEVELS];
       
       if (Math.random() < levelSettings.spawnRate * deltaTime * 0.1) {
-        createFallingObject();
+        setFallingObjects(prev => [...prev, createFallingObject(gameWidth, currentLevel)]);
       }
 
       const now = Date.now();
       const timeSinceLastPowerUp = now - lastPowerUpTime.current;
       if (timeSinceLastPowerUp > 15000 && Math.random() < levelSettings.powerUpChance * deltaTime * 0.01) {
-        createPowerUp();
+        setFallingObjects(prev => [...prev, createPowerUp(gameWidth, currentLevel)]);
         lastPowerUpTime.current = now;
       }
 
-      updateFallingObjects(deltaTime);
+      setFallingObjects(prev => updateFallingObjects(prev, deltaTime, gameHeight));
       checkCollisions();
 
       const newLevel = Math.min(3, Math.floor(score / 1500) + 1);
@@ -197,8 +184,9 @@ const Game: React.FC = () => {
         cancelAnimationFrame(gameLoopRef.current);
       }
     };
-  }, [isGameOver, isPaused, gameWidth, gameHeight, score, currentLevel, toast]);
+  }, [isGameOver, isPaused, gameWidth, gameHeight, score, currentLevel, toast, isInvincible, isMuscleMartin, hasDoublePoints]);
 
+  // Update dog position based on player movement
   useEffect(() => {
     lastPlayerPositionsRef.current.push({ x: playerPosition.x, direction: playerDirection });
     
@@ -247,104 +235,33 @@ const Game: React.FC = () => {
     });
   };
 
-  const createFallingObject = () => {
-    if (!gameWidth) return;
-
-    const id = Date.now() + Math.random();
-    const width = 30;
-    const x = Math.random() * (gameWidth - width);
-    const levelSettings = GAME_LEVELS[currentLevel as keyof typeof GAME_LEVELS];
-    
-    const isCoin = Math.random() > levelSettings.obstacleRate;
-    const speed = levelSettings.speed * (1 + Math.random() * 0.5);
-
-    const newObject: FallingObject = {
-      id,
-      x,
-      y: -30,
-      width,
-      height: 30,
-      speed,
-      type: isCoin ? 'coin' : 'obstacle'
-    };
-
-    setFallingObjects(prev => [...prev, newObject]);
-  };
-
-  const createPowerUp = () => {
-    if (!gameWidth) return;
-    
-    const id = Date.now() + Math.random();
-    const width = 40;
-    const x = Math.random() * (gameWidth - width);
-    const levelSettings = GAME_LEVELS[currentLevel as keyof typeof GAME_LEVELS];
-    const speed = levelSettings.speed * 0.8;
-
-    const powerTypes: Array<PowerUpObject['powerType']> = [];
-    
-    if (Math.random() < 0.1) {
-      powerTypes.push('extraLife');
-    } else {
-      powerTypes.push(Math.random() < 0.5 ? 'invincibility' : 'doublePoints');
-    }
-    
-    const powerType = powerTypes[0];
-
-    const newPowerUp: PowerUpObject = {
-      id,
-      x,
-      y: -30,
-      width,
-      height: 40,
-      speed,
-      type: 'powerup',
-      powerType
-    };
-    
-    setFallingObjects(prev => [...prev, newPowerUp]);
-  };
-
-  const updateFallingObjects = (deltaTime: number) => {
-    setFallingObjects(prev => 
-      prev
-        .map(obj => ({
-          ...obj,
-          y: obj.y + obj.speed * deltaTime
-        }))
-        .filter(obj => obj.y < (gameHeight + obj.height))
-    );
-  };
-
   const checkCollisions = () => {
     if (!playerRef.current) return;
 
     const playerRect = playerRef.current.getBoundingClientRect();
-    const playerX = playerRect.left;
-    const playerY = playerRect.top;
-    const playerWidth = playerRect.width;
-    const playerHeight = playerRect.height;
+    const playerBounds = {
+      left: playerRect.left,
+      top: playerRect.top,
+      right: playerRect.right,
+      bottom: playerRect.bottom
+    };
 
     setFallingObjects(prev => {
       const remaining = [];
       let scoreIncrement = 0;
       let lostLife = false;
       let powerupCollected = false;
-      let powerupType: PowerUpObject['powerType'] | null = null;
+      let powerupType = null;
 
       for (const obj of prev) {
-        const objectRect = {
+        const objectBounds = {
           left: obj.x,
           top: obj.y,
           right: obj.x + obj.width,
           bottom: obj.y + obj.height
         };
 
-        if (
-          playerX < objectRect.right &&
-          playerX + playerWidth > objectRect.left &&
-          playerY < objectRect.bottom &&
-          playerY + playerHeight > objectRect.top
-        ) {
+        if (checkCollision(playerBounds, objectBounds)) {
           if (obj.type === 'coin') {
             scoreIncrement += hasDoublePoints ? 2 : 1;
           } else if (obj.type === 'obstacle') {
@@ -386,77 +303,22 @@ const Game: React.FC = () => {
       }
       
       if (powerupCollected && powerupType) {
-        handlePowerUp(powerupType);
+        if (powerupType === 'extraLife') {
+          setLives(l => {
+            const newLives = Math.min(5, l + 1);
+            toast({
+              title: "Extra Life!",
+              description: `You now have ${newLives} lives!`,
+            });
+            return newLives;
+          });
+        } else {
+          handlePowerUp(powerupType);
+        }
       }
 
       return remaining;
     });
-  };
-
-  const handlePowerUp = (powerType: PowerUpObject['powerType']) => {
-    switch (powerType) {
-      case 'invincibility':
-        setIsInvincible(true);
-        setIsMuscleMartin(true);
-        setCameraShake(true);
-        
-        toast({
-          title: "Lemon Power!",
-          description: "You transformed into Muscle Martin! Invincible for 5 seconds!",
-        });
-        
-        if (invincibilityTimeoutRef.current) {
-          clearTimeout(invincibilityTimeoutRef.current);
-        }
-        
-        const shakeInterval = setInterval(() => {
-          setCameraShake(shake => !shake);
-        }, 100);
-        
-        invincibilityTimeoutRef.current = window.setTimeout(() => {
-          setIsInvincible(false);
-          setIsMuscleMartin(false);
-          setCameraShake(false);
-          clearInterval(shakeInterval);
-          
-          toast({
-            title: "Power ended!",
-            description: "You transformed back to normal!",
-          });
-        }, 5000);
-        break;
-        
-      case 'extraLife':
-        setLives(l => {
-          const newLives = Math.min(5, l + 1);
-          toast({
-            title: "Extra Life!",
-            description: `You now have ${newLives} lives!`,
-          });
-          return newLives;
-        });
-        break;
-        
-      case 'doublePoints':
-        setHasDoublePoints(true);
-        toast({
-          title: "Double Points!",
-          description: "Points are doubled for 8 seconds!",
-        });
-        
-        if (doublePointsTimeoutRef.current) {
-          clearTimeout(doublePointsTimeoutRef.current);
-        }
-        
-        doublePointsTimeoutRef.current = window.setTimeout(() => {
-          setHasDoublePoints(false);
-          toast({
-            title: "Double Points ended!",
-            description: "Back to normal points.",
-          });
-        }, 8000);
-        break;
-    }
   };
 
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -524,19 +386,7 @@ const Game: React.FC = () => {
     setFallingObjects([]);
     setCurrentLevel(1);
     setIsGameOver(false);
-    setIsInvincible(false);
-    setHasDoublePoints(false);
-    setIsMuscleMartin(false);
-    setCameraShake(false);
-    lastPowerUpTime.current = 0;
-    
-    if (invincibilityTimeoutRef.current) {
-      clearTimeout(invincibilityTimeoutRef.current);
-    }
-    
-    if (doublePointsTimeoutRef.current) {
-      clearTimeout(doublePointsTimeoutRef.current);
-    }
+    resetPowerUps();
     
     toast({
       title: "New Game Started!",
@@ -558,127 +408,47 @@ const Game: React.FC = () => {
         backgroundRepeat: 'no-repeat'
       }}
     >
-      <div 
-        ref={playerRef} 
-        className={`player ${isInvincible ? 'invincible' : ''} ${hasDoublePoints ? 'double-points' : ''} ${isWalking ? 'walking' : ''} ${isMuscleMartin ? 'muscle-martin' : ''}`}
-        style={{ 
-          left: `${playerPosition.x}px`,
-          bottom: `100px`,
-          backgroundImage: isMuscleMartin ? `url('/images/MuscleMartin.png')` : `url('/images/Martin.png')`,
-          backgroundSize: 'contain',
-          backgroundRepeat: 'no-repeat',
-          backgroundPosition: 'center',
-          transform: playerDirection === 'left' ? 'scaleX(-1)' : 'scaleX(1)',
-          transition: 'transform 0.2s ease-out',
-          width: '72px',
-          height: '72px'
-        }}
-      ></div>
+      <div ref={playerRef}>
+        <Player 
+          position={playerPosition}
+          direction={playerDirection}
+          isWalking={isWalking}
+          isInvincible={isInvincible}
+          hasDoublePoints={hasDoublePoints}
+          isMuscleMartin={isMuscleMartin}
+        />
+      </div>
       
-      <div 
-        ref={dogRef} 
-        className={`dog ${isDogWalking ? 'walking' : ''}`}
-        style={{ 
-          left: `${dogPosition.x}px`,
-          bottom: `100px`,
-          backgroundImage: `url('/images/Dog.png')`,
-          backgroundSize: 'contain',
-          backgroundRepeat: 'no-repeat',
-          backgroundPosition: 'center',
-          transform: dogPosition.direction === 'left' ? 'scaleX(-1)' : 'scaleX(1)',
-          width: '40px',
-          height: '40px'
-        }}
-      ></div>
+      <Dog 
+        position={dogPosition}
+        isWalking={isDogWalking}
+      />
       
       {fallingObjects.map((obj) => (
-        <div
-          key={obj.id}
-          className={
-            obj.type === 'coin' 
-              ? 'coin' 
-              : obj.type === 'obstacle' 
-                ? 'obstacle' 
-                : `powerup powerup-${obj.powerType}`
-          }
-          style={{
-            left: `${obj.x}px`,
-            top: `${obj.y}px`,
-            width: `${obj.width}px`,
-            height: `${obj.height}px`,
-            borderRadius: obj.type === 'coin' ? '50%' : obj.type === 'powerup' ? '0' : '0px',
-            backgroundImage: obj.type === 'powerup' ? `url('/images/lemon.webp')` : 'none',
-            backgroundSize: 'contain',
-            backgroundPosition: 'center',
-            backgroundRepeat: 'no-repeat',
-          }}
-        ></div>
+        <FallingObject key={obj.id} object={obj} />
       ))}
       
-      <div className="game-stats">
-        <div className="flex items-center mb-2">
-          <Coins className="mr-2" size={20} color="gold" />
-          <span>{score}</span>
-        </div>
-        <div className="flex items-center mb-2">
-          <span className="mr-2">Level: {currentLevel}</span>
-        </div>
-        <div className="flex items-center">
-          {Array.from({ length: lives }).map((_, i) => (
-            <Heart key={i} size={20} color="red" fill="red" className="mr-1" />
-          ))}
-        </div>
-        <div className="flex items-center mt-2">
-          {isInvincible && (
-            <div className="flex items-center mr-2 text-yellow-400">
-              <Star size={16} className="mr-1" />
-              <span>Invincible</span>
-            </div>
-          )}
-          {hasDoublePoints && (
-            <div className="flex items-center text-green-400">
-              <Coins size={16} className="mr-1" />
-              <span>2x Points</span>
-            </div>
-          )}
-          {isMuscleMartin && (
-            <div className="flex items-center text-red-400">
-              <span>💪 SUPER MARTIN!</span>
-            </div>
-          )}
-        </div>
-      </div>
+      <GameStats 
+        score={score}
+        currentLevel={currentLevel}
+        lives={lives}
+        isInvincible={isInvincible}
+        hasDoublePoints={hasDoublePoints}
+        isMuscleMartin={isMuscleMartin}
+      />
       
-      <div className="mobile-controls">
-        <button 
-          className="control-button left-button"
-          onTouchStart={startMovingLeft}
-          onTouchEnd={stopMovingLeft}
-          onMouseDown={startMovingLeft}
-          onMouseUp={stopMovingLeft}
-          onMouseLeave={stopMovingLeft}
-        >
-          &larr;
-        </button>
-        <button 
-          className="control-button right-button"
-          onTouchStart={startMovingRight}
-          onTouchEnd={stopMovingRight}
-          onMouseDown={startMovingRight}
-          onMouseUp={stopMovingRight}
-          onMouseLeave={stopMovingRight}
-        >
-          &rarr;
-        </button>
-      </div>
+      <MobileControls 
+        startMovingLeft={startMovingLeft}
+        stopMovingLeft={stopMovingLeft}
+        startMovingRight={startMovingRight}
+        stopMovingRight={stopMovingRight}
+      />
       
-      <div className={`game-over ${isGameOver ? '' : 'hidden'}`}>
-        <h2 className="text-3xl font-bold mb-4">Game Over!</h2>
-        <p className="text-xl mb-6">Final Score: {score}</p>
-        <Button onClick={resetGame} className="px-6 py-2 bg-blue-600 hover:bg-blue-700">
-          Play Again
-        </Button>
-      </div>
+      <GameOver 
+        isGameOver={isGameOver}
+        score={score}
+        resetGame={resetGame}
+      />
     </div>
   );
 };
