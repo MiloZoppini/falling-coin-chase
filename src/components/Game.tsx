@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Coins, Star, Trophy, Medal } from 'lucide-react';
 import { useIsMobile } from "@/hooks/use-mobile";
 import PlayerNameModal from './PlayerNameModal';
+import SheilaAnimation from './SheilaAnimation';
 import { getHighScores, saveHighScore, HighScore } from '@/services/supabaseService';
 import {
   Table,
@@ -68,6 +69,8 @@ const POOP_POINT_VALUE = 150;
 const POOP_WIDTH = 29;
 const POOP_HEIGHT = 29;
 const AUTO_POOP_INTERVAL = 10000;
+const SHEILA_APPEARANCE_CHANCE = 0.7; // 70% chance
+const MIN_SHEILA_INTERVAL = 15000; // Minimum 15 seconds between appearances
 
 const Game: React.FC = () => {
   const isMobile = useIsMobile();
@@ -92,6 +95,9 @@ const Game: React.FC = () => {
   const [isDogWalking, setIsDogWalking] = useState<boolean>(false);
   const [isEjecting, setIsEjecting] = useState<boolean>(false);
   const [isVodkaActive, setIsVodkaActive] = useState<boolean>(false);
+  
+  const [showSheilaAnimation, setShowSheilaAnimation] = useState<boolean>(false);
+  const lastSheilaAnimationTime = useRef<number>(0);
   
   const keysPressed = useRef<{left: boolean, right: boolean}>({
     left: false,
@@ -270,6 +276,19 @@ const Game: React.FC = () => {
       }
 
       const now = Date.now();
+      
+      const timeSinceLastSheila = now - lastSheilaAnimationTime.current;
+      if (!showSheilaAnimation && 
+          timeSinceLastSheila > MIN_SHEILA_INTERVAL && 
+          Math.random() < SHEILA_APPEARANCE_CHANCE * deltaTime * 0.001) {
+        setShowSheilaAnimation(true);
+        lastSheilaAnimationTime.current = now;
+      }
+
+      if (Math.random() < levelSettings.spawnRate * deltaTime * 0.1) {
+        createFallingObject();
+      }
+
       const timeSinceLastPowerUp = now - lastPowerUpTime.current;
       if (timeSinceLastPowerUp > 15000 && Math.random() < levelSettings.powerUpChance * deltaTime * 0.01) {
         createPowerUp();
@@ -351,7 +370,7 @@ const Game: React.FC = () => {
         cancelAnimationFrame(gameLoopRef.current);
       }
     };
-  }, [isGameOver, isPaused, gameWidth, gameHeight, score, currentLevel, isEjecting, playerName, isInvincible, areControlsReversed, isDogWalking, lives]);
+  }, [isGameOver, isPaused, gameWidth, gameHeight, score, currentLevel, isEjecting, playerName, isInvincible, areControlsReversed, isDogWalking, lives, showSheilaAnimation]);
 
   useEffect(() => {
     lastPlayerPositionsRef.current.push({ x: playerPosition.x, direction: playerDirection });
@@ -876,7 +895,9 @@ const Game: React.FC = () => {
     setIsEjecting(false);
     setSavedScore(false);
     setAreControlsReversed(false);
+    setShowSheilaAnimation(false);
     lastPowerUpTime.current = 0;
+    lastSheilaAnimationTime.current = 0;
     
     const gameOverElement = document.querySelector('.game-over');
     if (gameOverElement) {
@@ -931,6 +952,10 @@ const Game: React.FC = () => {
     }
   };
 
+  const handleSheilaAnimationComplete = () => {
+    setShowSheilaAnimation(false);
+  };
+
   return (
     <div 
       ref={gameContainerRef} 
@@ -951,6 +976,14 @@ const Game: React.FC = () => {
       
       {playerName && (
         <>
+          {showSheilaAnimation && gameWidth > 0 && gameHeight > 0 && (
+            <SheilaAnimation 
+              gameWidth={gameWidth} 
+              gameHeight={gameHeight} 
+              onAnimationComplete={handleSheilaAnimationComplete} 
+            />
+          )}
+          
           <div 
             ref={playerRef} 
             className={`player ${isInvincible ? 'invincible' : ''} ${hasDoublePoints ? 'double-points' : ''} ${isWalking ? 'walking' : ''} ${isHurt ? 'hurt' : ''} ${isEjecting ? 'ejecting' : ''} ${areControlsReversed ? 'drunk' : ''}`}
