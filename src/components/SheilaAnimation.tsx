@@ -107,7 +107,7 @@ const SheilaAnimation: React.FC<SheilaAnimationProps> = ({
           backgroundRepeat: 'no-repeat',
           backgroundPosition: 'center',
           opacity,
-          zIndex: 100, // Much higher zIndex to ensure it appears in front
+          zIndex: 999, // Even higher zIndex to ensure it appears in front
           transform: 'rotate(10deg)' // Slightly rotate the hammer for a dynamic look
         }}
       />
@@ -117,14 +117,14 @@ const SheilaAnimation: React.FC<SheilaAnimationProps> = ({
           position: 'absolute',
           left: `${position.x}px`,
           top: `${position.y}px`,
-          width: '80px',
-          height: '100px',
+          width: '100px', // Increased size for better visibility
+          height: '120px', // Increased size for better visibility
           backgroundImage: `url('/images/Sheila.png')`,
           backgroundSize: 'contain',
           backgroundRepeat: 'no-repeat',
           backgroundPosition: 'center',
           opacity,
-          zIndex: 100, // Much higher zIndex to ensure it appears in front
+          zIndex: 999, // Even higher zIndex to ensure it appears in front
           animation: walkFrame === 1 ? 'sheila-step 0.2s ease-in-out' : 'none'
         }}
       />
@@ -137,7 +137,7 @@ const SheilaAnimation: React.FC<SheilaAnimationProps> = ({
           50% { transform: translateY(-3px); }
           100% { transform: translateY(0px); }
         }
-      `}
+        `}
       </style>
     </>
   );
