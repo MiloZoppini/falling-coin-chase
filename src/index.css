@@ -16,6 +16,7 @@
     --powerup-invincibility: 300 80% 70%;
     --powerup-extraLife: 0 80% 70%;
     --powerup-doublePoints: 120 80% 70%;
+    --muscle-glow: 60 100% 50%;
   }
 
   .dark {
@@ -30,6 +31,7 @@
     --powerup-invincibility: 300 80% 70%;
     --powerup-extraLife: 0 80% 70%;
     --powerup-doublePoints: 120 80% 70%;
+    --muscle-glow: 60 100% 50%;
   }
 }
 
@@ -171,19 +173,31 @@
     }
   }
   
-  /* Powerup effects sul giocatore */
+  /* Powerup effects on player */
   .player.invincible {
-    box-shadow: 0 0 15px 5px hsl(var(--powerup-invincibility));
-    animation: pulse 1s infinite alternate;
+    box-shadow: 0 0 20px 8px hsl(var(--muscle-glow));
+    animation: muscle-pulse 0.8s infinite alternate;
   }
   
   /* Ensure invincible effect works with walking animation */
   .player.invincible.walking {
-    animation: pulse 1s infinite alternate, player-walk 0.5s infinite;
+    animation: muscle-pulse 0.8s infinite alternate, player-walk 0.5s infinite;
   }
   
   .player.invincible.walking[style*="scaleX(-1)"] {
-    animation: pulse 1s infinite alternate, player-walk-flipped 0.5s infinite;
+    animation: muscle-pulse 0.8s infinite alternate, player-walk-flipped 0.5s infinite;
+  }
+  
+  /* New pulse animation for MuscleMartin */
+  @keyframes muscle-pulse {
+    0% { 
+      box-shadow: 0 0 15px 5px hsl(var(--muscle-glow));
+      transform: scale(1);
+    }
+    100% { 
+      box-shadow: 0 0 25px 8px hsl(var(--muscle-glow));
+      transform: scale(1.05);
+    }
   }
   
   .player.double-points {
@@ -207,7 +221,7 @@
     z-index: 5;
   }
   
-  /* Stili per i powerup */
+  /* Styles for powerups */
   .powerup {
     position: absolute;
     width: 30px;
@@ -219,6 +233,7 @@
   
   .powerup-invincibility {
     background-color: hsl(var(--powerup-invincibility));
+    box-shadow: 0 0 10px 3px rgba(255, 255, 0, 0.7);
   }
   
   .powerup-extraLife {
@@ -229,7 +244,7 @@
     background-color: hsl(var(--powerup-doublePoints));
   }
   
-  /* Animazioni */
+  /* Animations */
   @keyframes pulse {
     0% { opacity: 0.7; }
     100% { opacity: 1; }

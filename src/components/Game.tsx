@@ -71,6 +71,8 @@ const Game: React.FC = () => {
   const doublePointsTimeoutRef = useRef<number | null>(null);
   const lastPowerUpTime = useRef<number>(0);
 
+  const [isMuscleMartin, setIsMuscleMartin] = useState<boolean>(false);
+
   useEffect(() => {
     const handleResize = () => {
       if (gameContainerRef.current) {
@@ -393,9 +395,10 @@ const Game: React.FC = () => {
     switch (powerType) {
       case 'invincibility':
         setIsInvincible(true);
+        setIsMuscleMartin(true);
         toast({
-          title: "Invincibility!",
-          description: "You are invincible for 5 seconds!",
+          title: "MUSCLE POWER!",
+          description: "Martin transforms into MuscleMartin! Invincible for 5 seconds!",
         });
         
         if (invincibilityTimeoutRef.current) {
@@ -404,6 +407,7 @@ const Game: React.FC = () => {
         
         invincibilityTimeoutRef.current = window.setTimeout(() => {
           setIsInvincible(false);
+          setIsMuscleMartin(false);
           toast({
             title: "Invincibility ended!",
             description: "Be careful now!",
@@ -547,14 +551,16 @@ const Game: React.FC = () => {
         style={{ 
           left: `${playerPosition.x}px`,
           bottom: `100px`,
-          backgroundImage: `url('/images/Martin.png')`,
+          backgroundImage: isMuscleMartin 
+            ? `url('/images/MuscleMartin.png')`
+            : `url('/images/Martin.png')`,
           backgroundSize: 'contain',
           backgroundRepeat: 'no-repeat',
           backgroundPosition: 'center',
           transform: playerDirection === 'left' ? 'scaleX(-1)' : 'scaleX(1)',
           transition: 'transform 0.2s ease-out',
-          width: '72px',
-          height: '72px'
+          width: isMuscleMartin ? '80px' : '72px',
+          height: isMuscleMartin ? '80px' : '72px'
         }}
       ></div>
       
