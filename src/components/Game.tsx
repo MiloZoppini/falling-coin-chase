@@ -569,6 +569,8 @@ const Game: React.FC = () => {
           backgroundRepeat: 'no-repeat',
           backgroundPosition: 'center',
           transform: dogPosition.direction === 'left' ? 'scaleX(-1)' : 'scaleX(1)',
+          width: '40px',
+          height: '40px'
         }}
       ></div>
       
