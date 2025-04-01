@@ -50,6 +50,7 @@ const Game: React.FC = () => {
   const [playerPosition, setPlayerPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [fallingObjects, setFallingObjects] = useState<FallingObject[]>([]);
   const [isPaused, setIsPaused] = useState<boolean>(false);
+  const [playerDirection, setPlayerDirection] = useState<'left' | 'right'>('right');
   
   const keysPressed = useRef<{left: boolean, right: boolean}>({
     left: false,
@@ -150,12 +151,10 @@ const Game: React.FC = () => {
 
       const levelSettings = GAME_LEVELS[currentLevel as keyof typeof GAME_LEVELS];
       
-      // Spawn objects based on level settings and time passed
       if (Math.random() < levelSettings.spawnRate * deltaTime * 0.1) {
         createFallingObject();
       }
 
-      // Power-ups should be rare (and with a minimum time between them)
       const now = Date.now();
       const timeSinceLastPowerUp = now - lastPowerUpTime.current;
       if (timeSinceLastPowerUp > 15000 && Math.random() < levelSettings.powerUpChance * deltaTime * 0.01) {
@@ -166,7 +165,6 @@ const Game: React.FC = () => {
       updateFallingObjects(deltaTime);
       checkCollisions();
 
-      // Progress level based on score
       const newLevel = Math.min(3, Math.floor(score / 1500) + 1);
       if (newLevel !== currentLevel) {
         setCurrentLevel(newLevel);
@@ -195,9 +193,11 @@ const Game: React.FC = () => {
 
       if (keysPressed.current.left && newX > 0) {
         newX = Math.max(0, newX - playerSpeed);
+        setPlayerDirection('left');
       }
       if (keysPressed.current.right && newX < gameWidth - playerWidth) {
         newX = Math.min(gameWidth - playerWidth, newX + playerSpeed);
+        setPlayerDirection('right');
       }
 
       return { ...prev, x: newX };
@@ -237,14 +237,11 @@ const Game: React.FC = () => {
     const levelSettings = GAME_LEVELS[currentLevel as keyof typeof GAME_LEVELS];
     const speed = levelSettings.speed * 0.8;
 
-    // Weight the power-ups so extraLife is rarer
     const powerTypes: Array<PowerUpObject['powerType']> = [];
     
-    // 10% chance for extra life
     if (Math.random() < 0.1) {
       powerTypes.push('extraLife');
     } else {
-      // 50% chance for each of the other power-ups
       powerTypes.push(Math.random() < 0.5 ? 'invincibility' : 'doublePoints');
     }
     
@@ -377,7 +374,6 @@ const Game: React.FC = () => {
         
       case 'extraLife':
         setLives(l => {
-          // Cap maximum lives at 5
           const newLives = Math.min(5, l + 1);
           toast({
             title: "Extra Life!",
@@ -398,7 +394,6 @@ const Game: React.FC = () => {
           clearTimeout(doublePointsTimeoutRef.current);
         }
         
-        // Reduce double points duration to 8 seconds
         doublePointsTimeoutRef.current = window.setTimeout(() => {
           setHasDoublePoints(false);
           toast({
@@ -425,6 +420,13 @@ const Game: React.FC = () => {
     setPlayerPosition(prev => {
       const playerWidth = playerRef.current?.offsetWidth || 40;
       const newX = Math.max(0, Math.min(gameWidth - playerWidth, prev.x + diffX));
+      
+      if (diffX < 0) {
+        setPlayerDirection('left');
+      } else if (diffX > 0) {
+        setPlayerDirection('right');
+      }
+      
       return { ...prev, x: newX };
     });
   };
@@ -434,7 +436,10 @@ const Game: React.FC = () => {
   };
 
   const startMovingLeft = () => {
-    if (!isGameOver) keysPressed.current.left = true;
+    if (!isGameOver) {
+      keysPressed.current.left = true;
+      setPlayerDirection('left');
+    }
   };
 
   const stopMovingLeft = () => {
@@ -442,7 +447,10 @@ const Game: React.FC = () => {
   };
 
   const startMovingRight = () => {
-    if (!isGameOver) keysPressed.current.right = true;
+    if (!isGameOver) {
+      keysPressed.current.right = true;
+      setPlayerDirection('right');
+    }
   };
 
   const stopMovingRight = () => {
@@ -490,7 +498,9 @@ const Game: React.FC = () => {
           backgroundImage: `url('/images/Martin.png')`,
           backgroundSize: 'contain',
           backgroundRepeat: 'no-repeat',
-          backgroundPosition: 'center'
+          backgroundPosition: 'center',
+          transform: playerDirection === 'left' ? 'scaleX(-1)' : 'scaleX(1)',
+          transition: 'transform 0.2s ease-out'
         }}
       ></div>
       
