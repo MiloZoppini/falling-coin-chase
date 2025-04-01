@@ -56,6 +56,8 @@ const Game: React.FC = () => {
   const [playerDirection, setPlayerDirection] = useState<'left' | 'right'>('right');
   const [isWalking, setIsWalking] = useState<boolean>(false);
   const [isDogWalking, setIsDogWalking] = useState<boolean>(false);
+  const [isMuscleMartin, setIsMuscleMartin] = useState<boolean>(false);
+  const [cameraShake, setCameraShake] = useState<boolean>(false);
   
   const keysPressed = useRef<{left: boolean, right: boolean}>({
     left: false,
@@ -91,10 +93,12 @@ const Game: React.FC = () => {
     handleResize();
     window.addEventListener('resize', handleResize);
 
-    toast({
-      title: "Game Started!",
-      description: "Catch the coins and avoid the obstacles!",
-    });
+    setTimeout(() => {
+      toast({
+        title: "Game Started!",
+        description: "Catch the coins and avoid the obstacles!",
+      });
+    }, 0);
 
     return () => {
       window.removeEventListener('resize', handleResize);
@@ -344,7 +348,7 @@ const Game: React.FC = () => {
           if (obj.type === 'coin') {
             scoreIncrement += hasDoublePoints ? 2 : 1;
           } else if (obj.type === 'obstacle') {
-            if (!isInvincible) {
+            if (!isInvincible && !isMuscleMartin) {
               lostLife = true;
             }
           } else if (obj.type === 'powerup') {
@@ -393,20 +397,31 @@ const Game: React.FC = () => {
     switch (powerType) {
       case 'invincibility':
         setIsInvincible(true);
+        setIsMuscleMartin(true);
+        setCameraShake(true);
+        
         toast({
-          title: "Invincibility!",
-          description: "You are invincible for 5 seconds!",
+          title: "Lemon Power!",
+          description: "You transformed into Muscle Martin! Invincible for 5 seconds!",
         });
         
         if (invincibilityTimeoutRef.current) {
           clearTimeout(invincibilityTimeoutRef.current);
         }
         
+        const shakeInterval = setInterval(() => {
+          setCameraShake(shake => !shake);
+        }, 100);
+        
         invincibilityTimeoutRef.current = window.setTimeout(() => {
           setIsInvincible(false);
+          setIsMuscleMartin(false);
+          setCameraShake(false);
+          clearInterval(shakeInterval);
+          
           toast({
-            title: "Invincibility ended!",
-            description: "Be careful now!",
+            title: "Power ended!",
+            description: "You transformed back to normal!",
           });
         }, 5000);
         break;
@@ -511,6 +526,8 @@ const Game: React.FC = () => {
     setIsGameOver(false);
     setIsInvincible(false);
     setHasDoublePoints(false);
+    setIsMuscleMartin(false);
+    setCameraShake(false);
     lastPowerUpTime.current = 0;
     
     if (invincibilityTimeoutRef.current) {
@@ -530,7 +547,7 @@ const Game: React.FC = () => {
   return (
     <div 
       ref={gameContainerRef} 
-      className="game-container"
+      className={`game-container ${cameraShake ? 'camera-shake' : ''}`}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
@@ -543,11 +560,11 @@ const Game: React.FC = () => {
     >
       <div 
         ref={playerRef} 
-        className={`player ${isInvincible ? 'invincible' : ''} ${hasDoublePoints ? 'double-points' : ''} ${isWalking ? 'walking' : ''}`}
+        className={`player ${isInvincible ? 'invincible' : ''} ${hasDoublePoints ? 'double-points' : ''} ${isWalking ? 'walking' : ''} ${isMuscleMartin ? 'muscle-martin' : ''}`}
         style={{ 
           left: `${playerPosition.x}px`,
           bottom: `100px`,
-          backgroundImage: `url('/images/Martin.png')`,
+          backgroundImage: isMuscleMartin ? `url('/images/MuscleMartin.png')` : `url('/images/Martin.png')`,
           backgroundSize: 'contain',
           backgroundRepeat: 'no-repeat',
           backgroundPosition: 'center',
@@ -622,6 +639,11 @@ const Game: React.FC = () => {
             <div className="flex items-center text-green-400">
               <Coins size={16} className="mr-1" />
               <span>2x Points</span>
+            </div>
+          )}
+          {isMuscleMartin && (
+            <div className="flex items-center text-red-400">
+              <span>💪 SUPER MARTIN!</span>
             </div>
           )}
         </div>
