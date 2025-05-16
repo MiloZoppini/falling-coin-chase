@@ -1051,7 +1051,7 @@ const Game: React.FC = () => {
                 <img 
                   key={i} 
                   src="/images/heart.png" 
-                  alt="Heart" 
+                  alt="Life" 
                   className="mr-1" 
                   style={{ width: '20px', height: '20px' }} 
                 />
