@@ -12,11 +12,15 @@ interface PlayerNameModalProps {
 
 // List of all game assets to preload
 const ASSETS_TO_PRELOAD = [
+  // Background and characters
   '/images/Background.webp',
   '/images/Martin.png',
   '/images/MuscleMartin.png',
+  '/images/Sheila.png',
   '/images/Dog.png',
   '/images/martin_vodka.png',
+  
+  // Game objects
   '/images/bitcoin.png',
   '/images/moneycash.png',
   '/images/saccosoldi.png',
@@ -24,7 +28,8 @@ const ASSETS_TO_PRELOAD = [
   '/images/lemon.webp',
   '/images/vodka.webp',
   '/images/nuke.png',
-  '/images/shit.png'
+  '/images/shit.png',
+  '/images/martello.png'
 ];
 
 const PlayerNameModal: React.FC<PlayerNameModalProps> = ({
@@ -32,36 +37,53 @@ const PlayerNameModal: React.FC<PlayerNameModalProps> = ({
 }) => {
   const [playerName, setPlayerName] = useState('');
   const [assetsLoaded, setAssetsLoaded] = useState(0);
+  const [failedAssets, setFailedAssets] = useState<string[]>([]);
   const [totalAssets] = useState(ASSETS_TO_PRELOAD.length);
   const [isLoading, setIsLoading] = useState(true);
   
   useEffect(() => {
     const preloadAssets = async () => {
-      // Function to preload a single image
+      // Function to preload a single image with timeout
       const preloadImage = (src: string): Promise<void> => {
         return new Promise((resolve) => {
           const img = new Image();
-          img.src = src;
+          
+          // Setup timeout to handle stalled downloads (5 seconds)
+          const timeout = setTimeout(() => {
+            console.warn(`Image loading timeout: ${src}`);
+            setFailedAssets(prev => [...prev, src]);
+            setAssetsLoaded(prev => prev + 1);
+            resolve();
+          }, 5000);
+          
           img.onload = () => {
+            clearTimeout(timeout);
             setAssetsLoaded(prev => prev + 1);
             resolve();
           };
+          
           img.onerror = () => {
+            clearTimeout(timeout);
             console.error(`Failed to load image: ${src}`);
+            setFailedAssets(prev => [...prev, src]);
             setAssetsLoaded(prev => prev + 1);
             resolve();
           };
+          
+          img.src = src;
         });
       };
       
-      // Preload all images in parallel
-      const preloadPromises = ASSETS_TO_PRELOAD.map(preloadImage);
-      
       try {
-        await Promise.all(preloadPromises);
-        setIsLoading(false);
+        // Load assets in batches of 3 to avoid overwhelming the browser
+        const batchSize = 3;
+        for (let i = 0; i < ASSETS_TO_PRELOAD.length; i += batchSize) {
+          const batch = ASSETS_TO_PRELOAD.slice(i, i + batchSize);
+          await Promise.all(batch.map(preloadImage));
+        }
       } catch (err) {
         console.error('Error preloading assets:', err);
+      } finally {
         setIsLoading(false);
       }
     };
@@ -89,7 +111,14 @@ const PlayerNameModal: React.FC<PlayerNameModalProps> = ({
             </div>
             <p className="text-[#EEEEEE] mb-4">Caricamento risorse del gioco...</p>
             <Progress value={loadingProgress} className="h-3 bg-[#111111]" />
-            <p className="text-[#EEEEEE] mt-2 text-sm">{loadingProgress}%</p>
+            <p className="text-[#EEEEEE] mt-2 text-sm">{loadingProgress}% ({assetsLoaded}/{totalAssets})</p>
+            
+            {failedAssets.length > 0 && (
+              <div className="mt-4 text-sm text-red-400">
+                <p>Alcuni asset non sono stati caricati correttamente.</p>
+                <p>Il gioco potrebbe non funzionare come previsto.</p>
+              </div>
+            )}
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="mb-6">
